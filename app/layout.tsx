@@ -21,19 +21,21 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://voyageholistique.com"),
   title: "Voyage Holistique | Retraite Bien-être Premium au Maroc",
   description:
-    "Une retraite holistique premium de 4 jours entre Fès, Moulay Yacoub, yoga, respiration, spiritualité marocaine, thermes Vichy, transport VIP et accompagnement expert.",
+    "Voyage Holistique du 12 au 15 juin : une retraite premium à Fès, Vichy Thermal et Sefrou, avec riad privé, yoga, hijama sèche, transport VIP et accompagnement expert. Seulement 7 960 DH.",
   keywords: [
     "Voyage Holistique",
     "retraite wellness",
-    "Vichy Céleste",
-    "Moulay Yacoub",
+    "Vichy Thermal",
     "Fès",
+    "Sefrou",
+    "hijama sèche",
     "yoga",
     "retreat"
   ],
   openGraph: {
     title: "Voyage Holistique | Retraite Bien-être Premium au Maroc",
-    description: "Une retraite holistique premium de 4 jours entre Fès, Moulay Yacoub, yoga, respiration, spiritualité marocaine, thermes Vichy, transport VIP et accompagnement expert.",
+    description:
+      "Du 12 au 15 juin : retraite premium à Fès, Vichy Thermal et Sefrou avec riad privé, yoga, hijama sèche, transport VIP et accompagnement expert. Seulement 7 960 DH.",
     images: ["/images/hero.png"]
   }
 };

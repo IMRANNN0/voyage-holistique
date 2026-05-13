@@ -46,6 +46,8 @@ import {
  * success. Credentials never live in the frontend.
  */
 const WEBHOOK_URL = process.env.NEXT_PUBLIC_GOOGLE_SHEET_WEBHOOK_URL ?? "";
+const RETREAT_DATES = "Du 12 au 15 juin";
+const RETREAT_PRICE = "Seulement 7 960 DH";
 
 type Intent = "reserver" | "rappel";
 
@@ -191,7 +193,7 @@ function BookingModal({
       intent: form.intent,
       source: "landing_page",
       offer: "Voyage Holistique",
-      price: "7960 DH",
+      price: RETREAT_PRICE,
       cta_location: ctaLocation,
     };
 
@@ -256,7 +258,8 @@ function BookingModal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 40, opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-2xl overflow-hidden rounded-t-[20px] border border-[#d8bd7a]/30 bg-[#0a1a14] text-[#f7f0e4] shadow-[0_30px_80px_rgba(0,0,0,0.6)] sm:rounded-[16px]"
+            className="relative w-full max-w-2xl overflow-hidden rounded-t-[20px] border border-[#d8bd7a]/25 text-[#F8F4ED] shadow-[0_30px_80px_rgba(0,0,0,0.6)] sm:rounded-[16px]"
+            style={{ background: "#041B16" }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -305,7 +308,7 @@ function SuccessView({ onClose }: { onClose: () => void }) {
       </p>
       <h3
         id="booking-modal-title"
-        className="font-display mt-3 text-3xl font-semibold leading-tight md:text-4xl"
+        className="font-display mt-3 text-3xl font-semibold leading-tight md:text-4xl text-[#fbf4e8]"
       >
         Merci pour votre confiance.
       </h3>
@@ -362,9 +365,9 @@ function FormView({
         >
           Réservez votre place
         </h3>
-        <p className="mt-3 text-sm leading-7 text-[#c9c1b4]">
-          Voyage Holistique · 4 jours ·{" "}
-          <span className="font-semibold text-[#d8bd7a]">7 960 DH</span> · Places limitées à 20.
+        <p className="mt-3 text-sm leading-7 text-[#ddd2bf]">
+          Voyage Holistique · {RETREAT_DATES} ·{" "}
+          <span className="font-semibold text-[#d8bd7a]">{RETREAT_PRICE}</span> · Places limitées à 20.
         </p>
       </div>
 
@@ -438,22 +441,7 @@ function FormView({
           />
         </LuxField>
 
-        <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
-          <IntentChip
-            active={form.intent === "reserver"}
-            onClick={() => onIntentChange("reserver")}
-            disabled={submitting}
-          >
-            Je veux réserver
-          </IntentChip>
-          <IntentChip
-            active={form.intent === "rappel"}
-            onClick={() => onIntentChange("rappel")}
-            disabled={submitting}
-          >
-            Je veux être rappelé(e)
-          </IntentChip>
-        </div>
+
 
         {status === "error" ? (
           <div className="rounded-[10px] border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-200 md:col-span-2">
@@ -481,7 +469,7 @@ function FormView({
           </button>
         </div>
 
-        <p className="text-center text-[11px] uppercase tracking-[0.2em] text-[#7a7264] md:col-span-2">
+        <p className="text-center text-[11px] uppercase tracking-[0.2em] text-[#6b6258] md:col-span-2">
           Vos informations restent strictement confidentielles.
         </p>
       </form>

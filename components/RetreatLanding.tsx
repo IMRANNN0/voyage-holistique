@@ -9,10 +9,12 @@ import {
   BedDouble,
   CalendarDays,
   Car,
+  Camera,
   Check,
   ChevronDown,
   Clock,
-  Gem,
+  Compass,
+  Droplet,
   HeartHandshake,
   Home,
   Leaf,
@@ -20,191 +22,135 @@ import {
   MapPin,
   Menu,
   MessageCircle,
+  Moon,
+  Minus,
   Mountain,
+  Plus,
   Quote,
   ShieldCheck,
   Sparkles,
   Star,
-  Timer,
+  Sunrise,
   Users,
   Utensils,
   Waves,
+  Wind,
   X,
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { BookingModalProvider, useBookingModal } from "@/components/BookingModal";
 import { LegalModalProvider, useLegalModals } from "@/components/LegalModals";
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /* ─── constants ───────────────────────────────────────────── */
-const WHATSAPP = `https://wa.me/212600000000?text=${encodeURIComponent(
-  "Bonjour, je souhaite réserver ma place pour le Voyage Holistique (7 960 DH). Merci."
+const WHATSAPP = `https://wa.me/31625375673?text=${encodeURIComponent(
+  "Bonjour, je souhaite réserver ma place pour le Voyage Holistique."
 )}`;
+const DATES = "Du 12 au 15 Juin";
+const PRICE = "Seulement 7 960 DH";
+const PLACES = "20 places uniquement";
 
 /* ─── navigation ──────────────────────────────────────────── */
 const navItems = [
-  { label: "Expérience", href: "#experience" },
-  { label: "Programme", href: "#programme-complet" },
+  { label: "Transformation", href: "#transformation" },
   { label: "Lieu", href: "#location" },
+  { label: "Programme", href: "#programme-complet" },
+  { label: "Apprentissages", href: "#learn" },
   { label: "Offre", href: "#offer" },
-  { label: "Équipe", href: "#supervision" },
   { label: "FAQ", href: "#faq" },
 ];
 
-/* ─── benefits (Experience section) ───────────────────────── */
-const benefits: Array<{ title: string; copy: string; icon: IconType }> = [
+/* ─── transformation outcomes (6 cards) ───────────────────── */
+type Transformation = {
+  title: string;
+  short: string;
+  details: string;
+  image: string;
+  /**
+   * Tailwind class controlling object-position on mobile (and resetting to
+   * center on lg+ so desktop is untouched). Literal strings so Tailwind JIT
+   * picks them up.
+   */
+  imgPos: string;
+};
+
+const transformations: Transformation[] = [
   {
-    title: "Respiration & recentrage",
-    copy: "Sortir du bruit mental et retrouver un espace intérieur calme.",
-    icon: Leaf,
+    title: "Rééquilibrer le corps",
+    short: "Soins thermaux et mouvement conscient pour revitaliser le corps.",
+    details:
+      "Les eaux thermales, les pratiques corporelles douces et les moments de repos profond aident le corps à retrouver son équilibre naturel.",
+    image: "/images/Rééquilibrer le corps.jpeg",
+    imgPos: "object-center",
   },
   {
-    title: "Nature & silence",
-    copy: "Des moments loin du rythme urbain pour ralentir profondément.",
-    icon: Mountain,
+    title: "Apaiser le mental",
+    short: "Méditation et respiration consciente pour ralentir intérieurement.",
+    details:
+      "Vous apprendrez à calmer le système nerveux, réduire le stress mental et retrouver plus de clarté émotionnelle.",
+    image: "/images/Apaiser le mental.png",
+    imgPos: "object-[center_35%] lg:object-center",
   },
   {
-    title: "Thermal healing",
-    copy: "L'expérience Vichy pensée pour apaiser le corps et le système nerveux.",
-    icon: Waves,
+    title: "Détoxifier naturellement",
+    short: "Hijama sèche, alimentation saine et purification naturelle.",
+    details:
+      "Une approche douce pour aider le corps à libérer les tensions et soutenir les processus naturels de détoxification.",
+    image: "/images/7ijama.jpeg",
+    imgPos: "object-center",
   },
   {
-    title: "Cercle humain intime",
-    copy: "Un groupe limité pour préserver la qualité des échanges.",
-    icon: Users,
+    title: "Reprendre des habitudes saines",
+    short: "Nutrition consciente et hygiène de vie équilibrée.",
+    details:
+      "Vous découvrirez des habitudes simples et durables à intégrer dans votre quotidien après la retraite.",
+    image: "/images/Reprendre des habitudes saines.png",
+    imgPos: "object-center",
   },
   {
-    title: "Spiritualité marocaine",
-    copy: "Une immersion douce entre traditions, présence et reconnexion.",
-    icon: Sparkles,
+    title: "Apprendre des rituels quotidiens",
+    short: "Créer une routine apaisante du matin et du soir.",
+    details:
+      "Des rituels concrets de respiration, silence, mouvement et recentrage pour retrouver une stabilité intérieure.",
+    image: "/images/Apprendre des rituels quotidiens.png",
+    imgPos: "object-[center_35%] lg:object-center",
   },
   {
-    title: "Accompagnement expert",
-    copy: "Chaque journée est guidée avec attention, écoute et présence.",
-    icon: HeartHandshake,
+    title: "Retrouver son énergie intérieure",
+    short: "Reconnecter le corps, le souffle et l'esprit.",
+    details:
+      "Un espace pour ralentir, respirer profondément et raviver une énergie plus calme et alignée.",
+    image: "/images/Retrouver son énergie intérieure.jpg",
+    imgPos: "object-[center_40%] lg:object-center",
   },
 ];
 
-const benefitImageAccents = [
-  { src: "/images/wellness-space.jpeg", label: "Terrasse panoramique" },
-  { src: "/images/riadpoolday.jpeg", label: "Riad lumineux" },
-  { src: "/images/thermal-pool.jpeg", label: "Thermal healing" },
-  { src: "/images/riad-luxury4.jpeg", label: "Courtyard privé" },
-  { src: "/images/WhatsApp Image 2026-05-12 at 16.27.58 (16).jpeg", label: "Architecture marocaine" },
-  { src: "/images/luxury-bath5.jpeg", label: "Rituel spa" },
-];
-
-const editorialVisuals = [
+/* ─── location experiences (3 cards) ──────────────────────── */
+const locationCards = [
   {
-    src: "/images/riad-luxury4.jpeg",
-    eyebrow: "Courtyard",
-    title: "Lumière, zellige et silence",
+    title: "Fès",
+    subtitle: "Riyad royal privé",
+    description: "Un riad d'exception privatisé pour le groupe. Intimité absolue, hospitalité raffinée.",
+    image: "/images/riad-luxury4.jpeg",
   },
-  {
-    src: "/images/riad-luxury-room.jpeg",
-    eyebrow: "Suite",
-    title: "Repos profond",
-  },
-  {
-    src: "/images/luxury-bath5.jpeg",
-    eyebrow: "Spa",
-    title: "Rituel d'eau",
-  },
-  {
-    src: "/images/WhatsApp Image 2026-05-12 at 16.28.00 (5).jpeg",
-    eyebrow: "Salon",
-    title: "Hospitalité marocaine",
-  },
-];
-
-const supervisionImages = [
-  "/images/photo laila 2.jpeg",
-  "/images/yoga.jpeg",
-  "/images/WhatsApp Image 2026-05-12 at 16.28.00 (6).jpeg",
-];
-
-/* ─── who is it for ───────────────────────────────────────── */
-const whoIsItFor: Array<{ title: string; icon: IconType }> = [
-  { title: "Vous vous sentez mentalement saturé(e)", icon: Timer },
-  { title: "Vous avez besoin de ralentir sans culpabilité", icon: Clock },
-  { title: "Vous cherchez une reconnexion au corps", icon: Sparkles },
-  { title: "Vous traversez une période de transition", icon: Mountain },
-  { title: "Vous voulez retrouver votre énergie", icon: Zap },
-  { title: "Vous avez besoin d'un cadre beau, calme et guidé", icon: Leaf },
-];
-
-/* ─── activities ──────────────────────────────────────────── */
-const activities = [
-  {
-    title: "Issawa & Amdah",
-    subtitle: "Soirée spirituelle",
-    description: "Une soirée spirituelle marocaine pour ouvrir le cœur et apaiser l'esprit.",
-    atmosphere: "Sensoriel · Mystique · Authentique",
-    image: "/images/sufi-night.jpeg",
-  },
-  {
-    title: "Yoga & Respiration",
-    subtitle: "Pratique guidée",
-    description: "Des pratiques guidées pour relâcher les tensions et calmer le mental.",
-    atmosphere: "Matinal · Doux · Revitalisant",
-    image: "/images/yoga.jpeg",
-  },
-  {
-    title: "Nature & Excursions",
-    subtitle: "Reconnexion",
-    description: "Des moments en pleine nature pour marcher, respirer et retrouver l'essentiel.",
-    atmosphere: "Naturel · Apaisant · Ressourçant",
-    image: "/images/garden.jpeg",
-  },
-  {
-    title: "Moments d'Exception",
-    subtitle: "Partage intime",
-    description: "Des instants de partage, de silence et de beauté dans un cadre intime.",
-    atmosphere: "Raffiné · Humain · Mémorable",
-    image: "/images/WhatsApp Image 2026-05-12 at 16.28.00 (5).jpeg",
-  },
-];
-
-/* ─── location features ───────────────────────────────────── */
-const features: Array<{ title: string; copy: string; icon: IconType }> = [
   {
     title: "Vichy Thermal",
-    copy: "Soins et rituels thermaux revitalisants dans un cadre d'exception à Moulay Yacoub.",
-    icon: Waves,
+    subtitle: "Expérience thermale",
+    description: "Une journée entière dédiée aux eaux thermales et au lâcher-prise du corps.",
+    image: "/images/thermal-pool.jpeg",
   },
   {
-    title: "Riad privé",
-    copy: "Un riad privatisé pour le groupe : intimité absolue, confort et authenticité raffinée.",
-    icon: Home,
-  },
-  {
-    title: "Hébergement VIP",
-    copy: "Service haut de gamme, atmosphère soignée et repos profond au cœur de Fès.",
-    icon: BedDouble,
-  },
-  {
-    title: "Transport VIP",
-    copy: "Transferts privés en Mercedes Mini Bus depuis Casablanca et Rabat, aller-retour inclus.",
-    icon: Car,
-  },
-  {
-    title: "Accompagnement expert",
-    copy: "Suivi personnalisé et bienveillant par Docteur Laila Qottaya tout au long de la retraite.",
-    icon: HeartHandshake,
+    title: "Sefrou",
+    subtitle: "Ferme nature & silence",
+    description: "Une ferme préservée pour marcher, respirer et se reconnecter à la nature.",
+    image: "/images/safrou.jpeg",
   },
 ];
 
-const locationStory: Array<{ icon: IconType; text: string }> = [
-  { icon: Waves, text: "Une eau thermale réputée pour la détente profonde." },
-  { icon: Leaf, text: "Un cadre pensé pour apaiser le système nerveux." },
-  { icon: Home, text: "Un riad privé pour préserver l'intimité du groupe." },
-  { icon: Sparkles, text: "Une atmosphère marocaine authentique et raffinée." },
-  { icon: Mountain, text: "Une vraie rupture avec le rythme quotidien." },
-];
-
-/* ─── detailed programme ──────────────────────────────────── */
+/* ─── 4-day programme ─────────────────────────────────────── */
 const detailedProgram: Array<{
   day: string;
   title: string;
@@ -216,19 +162,23 @@ const detailedProgram: Array<{
   {
     day: "Jour 1",
     title: "Accueil & Installation",
-    subtitle: "Fès — Riad privé — lancement de l'expérience",
-    image: "/images/riad-pool-.jpeg",
+    subtitle: "Fès — Riyad royal privé",
+    image: "/images/riad.jpeg",
     schedule: [
       { time: "Matin", activity: "Départ de Casablanca et Rabat en transport VIP.", icon: Car },
       {
         time: "Fin de journée",
-        activity: "Arrivée à Fès et installation dans un riad privé réservé exclusivement au groupe.",
+        activity: "Arrivée à Fès et installation dans le riyad privatisé.",
         icon: Home,
       },
-      { time: "Soir", activity: "Dîner sain et raffiné dans une ambiance calme et authentique.", icon: Utensils },
+      {
+        time: "Soir",
+        activity: "Dîner sain et raffiné dans une ambiance calme et authentique.",
+        icon: Utensils,
+      },
       {
         time: "Après dîner",
-        activity: "Présentation du programme par Docteur Laila Qottaya et ouverture officielle.",
+        activity: "Ouverture officielle avec Docteur Laila Qottaya.",
         icon: HeartHandshake,
       },
     ],
@@ -236,31 +186,23 @@ const detailedProgram: Array<{
   },
   {
     day: "Jour 2",
-    title: "Nature, Yoga & Respiration",
-    subtitle: "Sefrou — reconnexion au corps et à la nature",
-    image: "/images/wellness-space.jpeg",
+    title: "Nature, Yoga & Détox",
+    subtitle: "Sefrou — ferme nature et reconnexion",
+    image: "/images/yoga.jpeg",
     schedule: [
-      { time: "08:00 - 10:00", activity: "Réveil, méditation, respiration consciente et petit-déjeuner.", icon: Leaf },
-      { time: "10:30", activity: "Départ vers un domaine naturel dans la région de Sefrou.", icon: MapPin },
+      { time: "08:00", activity: "Méditation, respiration consciente et petit-déjeuner.", icon: Sunrise },
+      { time: "10:30", activity: "Départ vers une ferme préservée à Sefrou.", icon: MapPin },
+      { time: "11:00", activity: "Séance de yoga postural avec le coach spécialisé.", icon: Sparkles },
+      { time: "13:00", activity: "Marche consciente dans la nature.", icon: Mountain },
       {
-        time: "11:00 - 13:00",
-        activity: "Séance de yoga et pratiques corporelles avec le coach spécialisé.",
-        icon: Sparkles,
-      },
-      {
-        time: "13:00 - 14:30",
-        activity: "Marche consciente dans la nature et respiration en plein air.",
-        icon: Mountain,
-      },
-      {
-        time: "14:30 - 16:30",
-        activity: "Pause healthy, produits bio et séances individuelles avec Docteur Laila.",
+        time: "14:30",
+        activity: "Pause healthy bio + séances individuelles avec Docteur Laila.",
         icon: HeartHandshake,
       },
       {
-        time: "20:00 - 22:00",
-        activity: "Soirée spirituelle Issawa puis coaching holistique avant le sommeil.",
-        icon: Sparkles,
+        time: "20:00",
+        activity: "Soirée spirituelle Issawa puis coaching holistique.",
+        icon: Moon,
       },
     ],
     objective: "Libérer les tensions, réactiver l'énergie vitale et retrouver une respiration profonde.",
@@ -268,39 +210,31 @@ const detailedProgram: Array<{
   {
     day: "Jour 3",
     title: "Vichy Thermal & Spiritualité",
-    subtitle: "Moulay Yacoub — bien-être thermal — rencontre inspirante",
+    subtitle: "Vichy Thermal à Fès — bien-être thermal",
     image: "/images/thermal-pool.jpeg",
     schedule: [
-      { time: "08:00 - 10:00", activity: "Réveil, yoga sur la terrasse du riad et petit-déjeuner.", icon: Leaf },
-      {
-        time: "10:30 - 14:00",
-        activity: "Départ vers Vichy Thermalia / Moulay Yacoub et expérience thermale.",
-        icon: Waves,
-      },
-      { time: "15:30 - 16:30", activity: "Retour à Fès et temps de repos au riad.", icon: Home },
-      { time: "16:30 - 18:30", activity: "Rencontre avec une personnalité inspirante.", icon: Users },
-      { time: "19:00 - 20:30", activity: "Dîner raffiné au riad.", icon: Utensils },
-      {
-        time: "20:30 - 22:00",
-        activity: "Soirée Mdah & Samâa puis healing collectif holistique.",
-        icon: Sparkles,
-      },
+      { time: "08:00", activity: "Yoga sur la terrasse du riyad et petit-déjeuner.", icon: Sunrise },
+      { time: "10:30", activity: "Journée à Vichy Thermal et expérience thermale.", icon: Waves },
+      { time: "15:30", activity: "Retour au riyad et temps de repos.", icon: Home },
+      { time: "16:30", activity: "Rencontre avec une personnalité inspirante.", icon: Users },
+      { time: "19:00", activity: "Dîner raffiné au riyad.", icon: Utensils },
+      { time: "20:30", activity: "Soirée Mdah & Samâa puis healing collectif.", icon: Moon },
     ],
     objective: "Apaiser le système nerveux, nourrir l'âme et vivre une expérience spirituelle authentique.",
   },
   {
     day: "Jour 4",
     title: "Intégration & Clôture",
-    subtitle: "Bilan — attestations — retour",
-    image: "/images/retreat-bedroom.jpeg",
+    subtitle: "Bilan — rituels — retour",
+    image: "/images/riad-terrace.jpeg",
     schedule: [
-      { time: "08:00", activity: "Réveil, méditation, respiration et petit-déjeuner.", icon: Leaf },
+      { time: "08:00", activity: "Méditation, respiration et petit-déjeuner.", icon: Sunrise },
       {
         time: "09:00",
         activity: "Séance finale avec Docteur Laila : bilan et conseils holistiques.",
         icon: HeartHandshake,
       },
-      { time: "10:00 - 11:30", activity: "Échanges, témoignages et mots des participants.", icon: Users },
+      { time: "10:00", activity: "Échanges, témoignages et mots des participants.", icon: Users },
       { time: "11:30", activity: "Remise des attestations de participation.", icon: Award },
       { time: "12:00", activity: "Préparation au départ et retour vers Casablanca.", icon: Car },
     ],
@@ -308,147 +242,78 @@ const detailedProgram: Array<{
   },
 ];
 
-/* ─── what you leave with ─────────────────────────────────── */
-const whatYouLeaveWith: Array<{ title: string; copy: string; icon: IconType }> = [
-  {
-    title: "Une respiration plus profonde",
-    copy: "Des techniques de respiration consciente à pratiquer au quotidien.",
-    icon: Waves,
-  },
-  {
-    title: "Une énergie renouvelée",
-    copy: "Votre vitalité est réactivée, votre corps allégé. Vous vous reconnaissez à nouveau.",
-    icon: Zap,
-  },
-  {
-    title: "Une clarté mentale",
-    copy: "Le bruit du quotidien s'est estompé. Vous voyez vos priorités avec lucidité.",
-    icon: Sparkles,
-  },
-  {
-    title: "Des outils pratiques",
-    copy: "Yoga, méditation, respiration — des pratiques concrètes pour votre retour.",
-    icon: Check,
-  },
-  {
-    title: "Un apaisement émotionnel",
-    copy: "Une paix intérieure durable, née du silence et de l'accompagnement bienveillant.",
-    icon: HeartHandshake,
-  },
-  {
-    title: "Une reconnexion intérieure",
-    copy: "Vous repartez réconcilié(e) avec vous-même, avec un sens renouvelé.",
-    icon: Mountain,
-  },
+/* ─── what you will learn (12 items) ──────────────────────── */
+const learnings: Array<{ title: string; icon: IconType }> = [
+  { title: "Rituels du matin", icon: Sunrise },
+  { title: "Rituels du soir", icon: Moon },
+  { title: "Régulation émotionnelle", icon: HeartHandshake },
+  { title: "Nutrition holistique", icon: Utensils },
+  { title: "Détox naturelle du corps", icon: Droplet },
+  { title: "Techniques de respiration", icon: Wind },
+  { title: "Gestion du stress", icon: ShieldCheck },
+  { title: "Yoga postural", icon: Sparkles },
+  { title: "Méditation guidée", icon: Star },
+  { title: "Respiration consciente", icon: Leaf },
+  { title: "Apaisement du système nerveux", icon: Waves },
+  { title: "Habitudes de bien-être durables", icon: Compass },
 ];
 
-/* ─── supervision ─────────────────────────────────────────── */
-type SupervisionPerson = {
-  title: string;
-  role: string;
-  subtitle: string;
-  copy: string;
-  icon: IconType;
-  image: string;
-  captionSuffix?: string;
-};
-
-const supervision: SupervisionPerson[] = [
-  {
-    title: "Docteur Laila Qottaya",
-    role: "Médecine holistique",
-    subtitle: "Médecine holistique • Bien-être global • Accompagnement émotionnel",
-    copy: "Spécialiste de la santé holistique. Elle accompagne l'équilibre global — corps, émotions, mental et spiritualité — avec une présence médicale humaine et bienveillante.",
-    icon: HeartHandshake,
-    image: "/images/laila-qottaya.jpeg",
-  },
-  {
-    title: "Coach Yoga & Méditation",
-    role: "Mouvement conscient",
-    subtitle: "Yoga • Méditation • Respiration consciente",
-    copy: "Un guide doux et expert. Yoga, méditation et respiration consciente pour calmer le mental et réhabiliter le corps en douceur.",
-    icon: Leaf,
-    image: "/images/coach-yoga.jpeg",
-  },
-  {
-    title: "Personnalité surprise",
-    role: "Invité inspirant",
-    subtitle: "Inspiration • Partage humain • Rencontre rare",
-    copy: "Une voix singulière, choisie avec soin. Une rencontre inattendue qui marque les esprits et laisse une trace durable.",
-    icon: Sparkles,
-    image: "/images/anonymous-woman.png",
-    captionSuffix: "À dévoiler",
-  },
-];
-
-const trustCues: Array<{ icon: IconType; text: string }> = [
-  { icon: ShieldCheck, text: "Médecine & santé holistique" },
-  { icon: HeartHandshake, text: "Accompagnement personnalisé" },
-  { icon: Users, text: "Groupe intime et sécurisé" },
+/* ─── doctor credentials ──────────────────────────────────── */
+const doctorCredentials: string[] = [
+  "Médecine holistique",
+  "Bien-être global",
+  "Accompagnement émotionnel",
+  "Équilibre corps, âme et esprit",
+  "Accompagnement holistique personnalisé",
+  "Séances de hijama sèche pour aider à la détoxification naturelle du corps",
 ];
 
 /* ─── offer items ─────────────────────────────────────────── */
 const offerItems: Array<{ title: string; icon: IconType }> = [
-  { title: "Riad privatisé", icon: Home },
-  { title: "Hébergement VIP", icon: BedDouble },
+  { title: "Riyad royal privatisé à Fès", icon: Home },
+  { title: "Hébergement VIP · 3 nuits", icon: BedDouble },
   { title: "Mercedes Mini Bus VIP", icon: Car },
   { title: "Transport Casablanca / Rabat / Fès", icon: MapPin },
   { title: "Gastronomie saine et raffinée", icon: Utensils },
-  { title: "Expérience Vichy Thermal", icon: Waves },
+  { title: "Journée Vichy Thermal", icon: Waves },
   { title: "Yoga, méditation & respiration", icon: Leaf },
-  { title: "Soirées spirituelles Issawa, Mdah & Samâa", icon: HeartHandshake },
-  { title: "Encadrement expert", icon: ShieldCheck },
+  { title: "Séances de hijama sèche", icon: Droplet },
+  { title: "Encadrement Docteur Laila Qottaya", icon: ShieldCheck },
   { title: "Attestation de participation", icon: Award },
-  { title: "Groupe limité à 20 personnes", icon: Users },
+  { title: "20 places uniquement", icon: Users },
 ];
 
-/* ─── FAQs ────────────────────────────────────────────────── */
+/* ─── FAQs (max 6) ────────────────────────────────────────── */
 const faqs = [
   {
-    question: "Faut-il avoir un niveau en yoga ?",
-    answer: "Non, aucune expérience préalable n’est requise. Toutes les pratiques sont guidées et adaptées à chaque participante, quel que soit son niveau.",
-  },
-  {
     question: "Le transport est-il inclus ?",
-    answer: "Oui, le transport VIP en Mercedes Mini Bus depuis Casablanca et Rabat vers Fès (aller-retour) est entièrement inclus dans le tarif.",
-  },
-  {
-    question: "Les chambres sont-elles privées ?",
-    answer: "L’hébergement est en chambre partagée dans un riad privatisé exclusivement pour le groupe, avec un confort haut de gamme. Des options de chambre individuelle peuvent être discutées selon la disponibilité.",
-  },
-  {
-    question: "Combien de participantes ?",
     answer:
-      "Le groupe est volontairement limité à 20 participantes afin de préserver une expérience intime, personnalisée et de grande qualité.",
+      "Oui, le transport VIP Casablanca / Rabat vers Fès et retour est entièrement inclus.",
   },
   {
-    question: "Quelle est la politique d’annulation ?",
+    question: "L'hébergement est-il inclus ?",
     answer:
-      "Toute annulation effectuée 30 jours avant la date de départ donne droit à un remboursement intégral. Entre 30 et 15 jours, 50% du montant est retenu. En deçà de 15 jours, aucun remboursement n’est possible. Le transfert de place à une autre personne est accepté sans frais.",
+      "Oui, l'hébergement VIP dans un riyad royal privatisé à Fès est inclus pour toute la durée.",
   },
   {
-    question: "La retraite est-elle ouverte aux débutantes ?",
-    answer: "Absolument. Cette retraite est conçue pour toutes les femmes, débutantes ou initiées. Chaque pratique est guidée avec douceur et adaptée à votre rythme.",
-  },
-  {
-    question: "Un accompagnement personnalisé est-il possible ?",
+    question: "Est-ce adapté aux débutants ?",
     answer:
-      "Oui, Docteur Laila Qottaya propose des séances individuelles de coaching holistique pendant la retraite. Ces moments privilégiés permettent un travail plus profond et adapté à vos besoins spécifiques.",
+      "Oui, toutes les pratiques sont accessibles et accompagnées par des professionnels bienveillants.",
   },
   {
     question: "Que comprend le tarif ?",
     answer:
-      "Le tarif inclut l’hébergement premium, le transport VIP aller-retour, les repas sains et raffinés, toutes les expériences holistiques, le Vichy Thermal, l’encadrement expert et l’attestation de participation.",
+      "Hébergement, transport VIP, repas raffinés, expériences holistiques, Vichy Thermal, hijama sèche, encadrement et attestation.",
   },
   {
     question: "Comment réserver ?",
     answer:
-      "Vous pouvez réserver directement via le bouton « Réserver ma place » sur cette page ou nous contacter par WhatsApp. Un acompte sécurise votre place.",
+      "Cliquez sur « Réserver ma place » pour remplir le formulaire, ou contactez-nous via WhatsApp.",
   },
   {
-    question: "Peut-on venir seule ?",
+    question: "Peut-on venir seul(e) ?",
     answer:
-      "Oui, la majorité des participantes viennent seules. Le cadre est pensé pour être accueillant, respectueux et bienveillant. C’est souvent le meilleur moyen de vivre pleinement l’expérience.",
+      "Bien sûr. La plupart des participants viennent seul(e)s. Le cadre est pensé pour être accueillant et bienveillant.",
   },
 ];
 
@@ -458,45 +323,26 @@ const testimonials = [
     quote:
       "Je suis arrivée fatiguée, avec l'impression de porter trop de choses. Je suis repartie avec une respiration plus calme et une énergie que je n'avais pas ressentie depuis longtemps.",
     name: "Nadia B.",
-    role: "Entrepreneure",
-    city: "Casablanca",
+    role: "Entrepreneure · Casablanca",
     stars: 5,
   },
   {
     quote:
       "Le mélange entre le riad, les thermes, la spiritualité et l'accompagnement m'a profondément touchée. Tout était pensé avec finesse.",
     name: "Samira E.",
-    role: "Fondatrice creative",
-    city: "Rabat",
+    role: "Fondatrice créative · Rabat",
     stars: 5,
   },
   {
     quote:
       "Je ne cherchais pas seulement du repos. J'avais besoin d'un cadre pour me retrouver. Ces quatre jours m'ont vraiment recentrée.",
     name: "Leila M.",
-    role: "Consultante",
-    city: "Marrakech",
-    stars: 5,
-  },
-  {
-    quote:
-      "J'ai retrouvé un calme intérieur que je pensais avoir perdu. Le cadre, l'encadrement, les soins — tout portait vers l'essentiel.",
-    name: "Amina K.",
-    role: "Architecte d'intérieur",
-    city: "Casablanca",
-    stars: 5,
-  },
-  {
-    quote:
-      "C'est la première fois que je me suis autorisée à m'arrêter vraiment. L'expérience thermale et les soirées spirituelles m'ont profondément marquée.",
-    name: "Fatima Z.",
-    role: "Médecin",
-    city: "Rabat",
+    role: "Consultante · Marrakech",
     stars: 5,
   },
 ];
 
-/* ─── animation variants ──────────────────────────────────── */
+/* ─── animation variant ───────────────────────────────────── */
 const fadeUp = { hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0 } };
 
 /* ═══════════════════════════════════════════════════════════
@@ -579,7 +425,7 @@ function CtaButton({
 }
 
 /* ═══════════════════════════════════════════════════════════
-   HEADER
+   HEADER  (absolute — scrolls away with content)
 ══════════════════════════════════════════════════════════════ */
 
 function Header() {
@@ -588,18 +434,18 @@ function Header() {
 
   return (
     <>
-      {/* Sits at the very top of the page — scrolls away with content (not fixed) */}
       <header className="absolute left-0 right-0 top-0 z-50 px-4 pt-4 md:px-8">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between rounded-full border border-white/10 bg-[#07120e]/45 px-4 py-3 text-[#f7f0e4] shadow-2xl backdrop-blur-xl md:px-6">
-          <a href="#top" className="flex shrink-0 items-center">
-            <Image
-              src="/images/logo.png"
-              alt="Holistic Health Academy"
-              width={160}
-              height={40}
-              className="h-6 w-auto object-contain sm:h-7"
-              priority
-            />
+          <a href="#top" className="flex items-center">
+            <div className="relative h-10 w-36 md:h-12 md:w-44">
+              <Image
+                src="/images/logo.png"
+                alt="Voyage Holistique Logo"
+                fill
+                sizes="(min-width: 768px) 176px, 144px"
+                className="object-contain"
+              />
+            </div>
           </a>
           <nav className="hidden items-center gap-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#ddd3c1] lg:flex lg:gap-7 lg:text-xs lg:tracking-[0.18em]">
             {navItems.map((item) => (
@@ -664,7 +510,7 @@ function Header() {
                 }}
                 className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#d8bd7a] px-5 text-sm font-semibold uppercase tracking-[0.18em] text-[#07120e]"
               >
-                Réserver votre expérience
+                Réserver votre place
               </button>
             </div>
           </motion.div>
@@ -675,7 +521,7 @@ function Header() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   HERO  (approved — do not redesign)
+   HERO  (dates + price + places upfront)
 ══════════════════════════════════════════════════════════════ */
 
 function Hero() {
@@ -684,8 +530,6 @@ function Hero() {
   const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
   const contentY = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
   const { open: openBooking } = useBookingModal();
-
-
 
   return (
     <section
@@ -700,28 +544,19 @@ function Hero() {
           fill
           priority
           sizes="100vw"
-          className="scale-110 object-cover"
-          style={{ filter: "brightness(1.16) saturate(1.14) sepia(0.08)" }}
+          className="scale-110 object-cover brightness-[1.45] saturate-120"
         />
       </motion.div>
-      {/* Warmer, lighter cinematic gradient — keeps text readable while letting the golden light breathe */}
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,20,15,0.54),rgba(91,55,24,0.24)_48%,rgba(216,167,85,0.08)),linear-gradient(180deg,rgba(5,20,15,0.30),rgba(91,55,24,0.20)_46%,rgba(5,20,15,0.50))]" />
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(0deg,rgba(7,18,14,0.68),rgba(7,18,14,0))]" />
+      {/* Lighter cinematic overlay — keeps text readable while letting the image breathe */}
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,20,15,0.38),rgba(5,20,15,0.12)_46%,rgba(5,20,15,0.02)),linear-gradient(180deg,rgba(5,20,15,0.12),rgba(5,20,15,0.16)_50%,rgba(5,20,15,0.58))]" />
+      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#07120e] to-transparent" />
 
       <motion.div
         style={{ y: contentY }}
-        className="relative z-10 mx-auto flex w-full max-w-7xl flex-col justify-end px-5 pb-8 pt-36 md:px-8 md:pb-14"
+        className="relative z-10 mx-auto flex w-full max-w-7xl flex-col justify-end px-5 pb-10 pt-36 md:px-8 md:pb-16"
       >
         <div className="max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.36em] text-[#d8bd7a] md:text-sm">
-              Retraite d&apos;Exception · Fès & Moulay Yacoub
-            </p>
-          </motion.div>
+
 
           <motion.h1
             initial={{ opacity: 0, y: 28 }}
@@ -739,16 +574,18 @@ function Hero() {
             className="mt-8 flex flex-col gap-7 md:flex-row md:items-end md:justify-between"
           >
             <div>
-              <p className="font-display text-2xl text-[#ecd8aa] md:text-3xl">Corps · Âme · Esprit</p>
-              <p className="mt-4 max-w-lg text-base leading-8 text-[#e8dfcf]/90 md:text-lg">
-                Quatre jours pour ralentir, respirer et revenir à vous.
+              <p className="font-display text-4xl font-bold tracking-[0.02em] text-[#fbeec1] drop-shadow-[0_2px_18px_rgba(0,0,0,0.45)] md:text-5xl">
+                Corps • Âme • Esprit
+              </p>
+              <p className="mt-5 max-w-xl text-base leading-8 text-[#ece2cf] md:text-lg">
+                Quatre jours pour revenir à vous, élever votre énergie et transformer votre rythme intérieur.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <CtaButton onClick={() => openBooking("hero")}>Réserver ma place</CtaButton>
               <a
                 href="#programme-complet"
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-[#e8dfcf] transition duration-300 hover:border-white/40 hover:text-white sm:w-auto sm:px-6"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/25 px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-[#e8dfcf] transition duration-300 hover:border-white/55 hover:text-white sm:w-auto sm:px-6"
               >
                 Découvrir le programme
                 <ChevronDown className="h-4 w-4" />
@@ -756,422 +593,201 @@ function Hero() {
             </div>
           </motion.div>
         </div>
-
-
       </motion.div>
 
       <div className="absolute bottom-6 right-5 z-10 hidden items-center gap-3 text-xs uppercase tracking-[0.24em] text-[#d8bd7a] md:flex">
         <span className="h-px w-16 bg-[#d8bd7a]/70" />
-        Fès · Moulay Yacoub
+        Fès · Sefrou · Vichy Thermal
       </div>
     </section>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   EXPERIENCE — luxury benefits (6 cards)
+   TRANSFORMATION  (6 outcome cards)
 ══════════════════════════════════════════════════════════════ */
 
-function Experience() {
+function Transformation() {
   return (
     <section
-      id="experience"
-      className="relative overflow-hidden bg-[#efe2cf] px-5 py-24 text-[#07120e] md:px-8 md:py-32"
+      id="transformation"
+      className="noise relative bg-[#07120e] px-5 py-28 text-[#f7f0e4] md:px-8 md:py-36"
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.18]"
-        style={{
-          backgroundImage:
-            "linear-gradient(135deg, rgba(143,111,56,0.34) 1px, transparent 1px), linear-gradient(45deg, rgba(15,42,32,0.18) 1px, transparent 1px)",
-          backgroundSize: "34px 34px",
-        }}
-      />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#07120e]/18 to-transparent" />
-
-      <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.03fr_0.97fr] lg:items-center">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-          className="relative min-h-[640px] lg:min-h-[680px]"
-        >
-          <div className="luxury-shadow relative h-[470px] overflow-hidden rounded-[10px] border border-[#c19a55]/25 bg-[#07120e] md:h-[620px]">
-            <Image
-              src="/images/riad-luxury4.jpeg"
-              alt="Courtyard marocain privé avec bassin"
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-              style={{ filter: "brightness(1.04) saturate(1.08) sepia(0.04)" }}
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,14,0.08),rgba(7,18,14,0.16)),linear-gradient(90deg,rgba(193,154,85,0.08),transparent_48%)]" />
-            <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4 border-t border-white/30 pt-5 text-[#fbf4e8]">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#f4d796]">Riad privé</p>
-                <p className="font-display mt-2 text-3xl font-semibold md:text-4xl">Un lieu qui respire</p>
-              </div>
-              <Gem className="hidden h-10 w-10 text-[#f4d796] sm:block" />
-            </div>
-          </div>
-
-          <div className="absolute bottom-8 right-0 w-[58%] overflow-hidden rounded-[10px] border-4 border-[#efe2cf] bg-[#07120e] shadow-[0_24px_60px_rgba(7,18,14,0.22)] md:-right-5 md:bottom-9 md:w-[44%]">
-            <div className="relative aspect-[4/3]">
-              <Image
-                src="/images/thermal-pool.jpeg"
-                alt="Espace thermal lumineux"
-                fill
-                sizes="(min-width: 1024px) 24vw, 56vw"
-                className="object-cover"
-              />
-            </div>
-          </div>
-
-          <div className="absolute -left-2 top-8 hidden w-[34%] overflow-hidden rounded-[10px] border-4 border-[#efe2cf] bg-[#07120e] shadow-[0_18px_50px_rgba(7,18,14,0.18)] sm:block">
-            <div className="relative aspect-[5/4]">
-              <Image
-                src="/images/WhatsApp Image 2026-05-12 at 16.28.00 (6).jpeg"
-                alt="Atrium marocain avec lanternes"
-                fill
-                sizes="22vw"
-                className="object-cover"
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        <div>
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8f6f38]">L'expérience</p>
-            <h2 className="font-display mt-5 max-w-2xl text-4xl font-semibold leading-[1.04] text-[#07120e] md:text-6xl">
-              Bien plus qu'un séjour bien-être.
-            </h2>
-            <p className="mt-6 max-w-xl text-base leading-8 text-[#5d574c] md:text-lg">
-              Une respiration rare dans un quotidien saturé, portée par le riad, l'eau, la nature et un cercle
-              volontairement intime.
-            </p>
-          </motion.div>
-
-          <div className="mt-12 grid gap-4 sm:grid-cols-2">
-            {benefits.map((benefit, index) => {
-              const Icon = benefit.icon;
-              const accent = benefitImageAccents[index];
-              return (
-                <motion.article
-                  key={benefit.title}
-                  variants={fadeUp}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.7, delay: index * 0.05 }}
-                  className="group relative min-h-[210px] overflow-hidden rounded-[10px] border border-[#c19a55]/20 bg-[#fbf6ec]/78 p-5 shadow-[0_18px_45px_rgba(7,18,14,0.08)] backdrop-blur-sm transition duration-500 hover:-translate-y-1 hover:border-[#c19a55]/45 hover:bg-white"
-                >
-                  <div className="absolute right-4 top-4 h-16 w-16 overflow-hidden rounded-full border border-[#c19a55]/25 opacity-80 transition duration-500 group-hover:scale-105 group-hover:opacity-100">
-                    <Image
-                      src={accent.src}
-                      alt={accent.label}
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-[#c19a55]/35 bg-[#c19a55]/10 text-[#8f6f38] transition duration-500 group-hover:bg-[#c19a55] group-hover:text-[#07120e]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-display relative mt-7 max-w-[12rem] text-2xl font-semibold leading-tight text-[#07120e]">
-                    {benefit.title}
-                  </h3>
-                  <p className="relative mt-3 max-w-[17rem] text-sm leading-6 text-[#5d574c]">{benefit.copy}</p>
-                </motion.article>
-              );
-            })}
-          </div>
+      <div className="mx-auto max-w-6xl">
+        <SectionHeading
+          light
+          eyebrow="Transformation"
+          title="Une transformation holistique en 4 jours"
+          copy="Pas un séjour parmi d'autres. Une immersion rare pour rééquilibrer le corps, apaiser le mental et raviver l'énergie intérieure."
+        />
+        <div className="mt-20 grid gap-6 md:grid-cols-2">
+          {transformations.map((item, index) => (
+            <TransformationCard key={item.title} item={item} index={index} />
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   WHO IS IT FOR
-══════════════════════════════════════════════════════════════ */
+function TransformationCard({ item, index }: { item: Transformation; index: number }) {
+  const [open, setOpen] = useState(false);
 
-function WhoIsItFor() {
-  const { open: openBooking } = useBookingModal();
   return (
-    <section id="pour-vous" className="relative overflow-hidden bg-[#fbf3e7] px-5 py-28 text-[#07120e] md:px-8 md:py-36">
-      <Image
-        src="/images/riad-terrace.jpeg"
-        alt="Terrasse de riad baignée de lumière"
-        fill
-        sizes="100vw"
-        className="object-cover opacity-[0.14]"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(251,243,231,0.96),rgba(251,243,231,0.86)_55%,rgba(251,243,231,0.70)),linear-gradient(180deg,rgba(216,189,122,0.18),rgba(251,243,231,0.94))]" />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.14]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 12px 12px, rgba(143,111,56,0.32) 1px, transparent 1px)",
-          backgroundSize: "30px 30px",
-        }}
-      />
-
-      <div className="relative mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-          className="relative min-h-[500px] lg:min-h-[680px]"
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.8, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+      // Fixed height so both flip faces share the exact same footprint
+      className="group relative h-[420px] [perspective:1400px] lg:h-[280px]"
+    >
+      <motion.div
+        animate={{ rotateY: open ? 180 : 0 }}
+        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+        className="relative h-full w-full"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        {/* ─── FRONT ─── */}
+        <div
+          className="absolute inset-0 overflow-hidden rounded-[14px] border border-[#d8bd7a]/22 bg-[#0a1a14]/85 shadow-[0_24px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm transition duration-500 group-hover:border-[#d8bd7a]/55 group-hover:shadow-[0_30px_70px_rgba(216,189,122,0.14)]"
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+          }}
         >
-          <div className="luxury-shadow relative h-[460px] overflow-hidden rounded-[10px] border border-[#c19a55]/25 bg-[#07120e] md:h-[620px]">
-            <Image
-              src="/images/riad-terrace.jpeg"
-              alt="Terrasse calme ouverte sur le jardin"
-              fill
-              sizes="(min-width: 1024px) 42vw, 100vw"
-              className="object-cover"
-              style={{ filter: "brightness(1.08) saturate(1.1) sepia(0.05)" }}
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,14,0.04),rgba(7,18,14,0.28)),linear-gradient(90deg,rgba(193,154,85,0.14),transparent_62%)]" />
-          </div>
-
-          <div className="absolute -bottom-1 right-0 w-[54%] overflow-hidden rounded-[10px] border-4 border-[#fbf3e7] bg-[#07120e] shadow-[0_24px_60px_rgba(7,18,14,0.2)] md:-right-8 md:bottom-12 md:w-[46%]">
-            <div className="relative aspect-[4/3]">
-              <Image
-                src="/images/yoga.jpeg"
-                alt="Pratique corporelle en plein air"
-                fill
-                sizes="(min-width: 1024px) 22vw, 54vw"
-                className="object-cover"
-              />
-            </div>
-          </div>
-
-          <div className="absolute left-5 top-5 max-w-[15rem] border-l border-[#d8bd7a]/70 bg-[#07120e]/46 px-5 py-4 text-[#fbf4e8] backdrop-blur-md">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#f4d796]">Invitation</p>
-            <p className="font-display mt-2 text-2xl font-semibold leading-tight">Ralentir sans disparaître.</p>
-          </div>
-        </motion.div>
-
-        <div>
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8f6f38]">Pour qui ?</p>
-            <h2 className="font-display mt-5 max-w-3xl text-4xl font-semibold leading-[1.04] text-[#07120e] md:text-6xl">
-              Cette retraite est pour vous si…
-            </h2>
-            <p className="mt-7 max-w-2xl text-lg leading-9 text-[#5d574c] md:text-xl">
-              Vous n’avez pas besoin d’être prêt(e). Vous avez juste besoin de vous autoriser à venir.
-            </p>
-          </motion.div>
-
-          <div className="mt-14 grid gap-5 sm:grid-cols-2">
-            {whoIsItFor.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <motion.article
-                  key={item.title}
-                  variants={fadeUp}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.65, delay: index * 0.06 }}
-                  className="group relative flex min-h-[148px] items-start gap-5 overflow-hidden rounded-[12px] border border-[#c19a55]/20 bg-white/62 p-6 shadow-[0_16px_40px_rgba(7,18,14,0.07)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-[#c19a55]/40 hover:bg-white/85"
-                >
-                  <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#d8bd7a] via-[#c19a55]/70 to-transparent opacity-75" />
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#c19a55]/35 bg-[#c19a55]/10 text-[#8f6f38] transition group-hover:bg-[#c19a55] group-hover:text-[#07120e]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-display pt-2 text-[22px] font-medium leading-tight text-[#07120e] md:text-2xl">
-                    {item.title}
-                  </h3>
-                </motion.article>
-              );
-            })}
-          </div>
-
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.75, delay: 0.24 }}
-            className="mt-12 border-t border-[#c19a55]/25 pt-9"
-          >
-            <p className="font-display max-w-2xl text-2xl leading-snug text-[#8f6f38] md:text-3xl">
-              &ldquo;Vous n&rsquo;avez pas besoin de tout changer. Parfois, il suffit de quatre jours pour recommencer
-              à respirer.&rdquo;
-            </p>
-            <div className="mt-8">
-              <CtaButton onClick={() => openBooking("who_is_it_for")}>Réserver ma place</CtaButton>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════
-   ACTIVITIES
-══════════════════════════════════════════════════════════════ */
-
-function EditorialVisualStory() {
-  return (
-    <section className="relative overflow-hidden bg-[#07120e] px-5 py-24 text-[#f7f0e4] md:px-8 md:py-32">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(216,189,122,0.12),transparent_34%),linear-gradient(180deg,rgba(7,18,14,1),rgba(15,42,32,0.96))]" />
-      <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#d8bd7a]">Atmosphère</p>
-          <h2 className="font-display mt-5 max-w-xl text-5xl font-semibold leading-[1.02] text-[#fbf4e8] md:text-7xl">
-            Le décor fait partie du soin.
-          </h2>
-          <p className="mt-7 max-w-lg text-base leading-8 text-[#cfc6b8] md:text-lg">
-            Riad privé, suites calmes, bains marocains et salons baignés de lumière : chaque espace soutient le
-            ralentissement.
-          </p>
-          <div className="mt-10 grid max-w-md grid-cols-2 gap-3">
-            {["Riad privé", "Suite premium", "Spa marocain", "Salon intime"].map((item) => (
-              <div key={item} className="border-l border-[#d8bd7a]/50 bg-white/[0.04] px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d8bd7a]">{item}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="grid gap-4 sm:grid-cols-[1.08fr_0.92fr]"
-        >
-          <div className="luxury-shadow group relative min-h-[500px] overflow-hidden rounded-[10px] border border-[#d8bd7a]/18 bg-[#07120e]">
-            <Image
-              src={editorialVisuals[0].src}
-              alt={editorialVisuals[0].title}
-              fill
-              sizes="(min-width: 1024px) 42vw, 100vw"
-              className="object-cover transition duration-[1200ms] group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#07120e]/62 via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d8bd7a]">
-                {editorialVisuals[0].eyebrow}
-              </p>
-              <p className="font-display mt-2 text-3xl font-semibold text-[#fbf4e8]">
-                {editorialVisuals[0].title}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            {editorialVisuals.slice(1).map((visual, index) => (
-              <div
-                key={visual.src}
-                className={`group relative overflow-hidden rounded-[10px] border border-[#d8bd7a]/18 bg-[#07120e] ${
-                  index === 1 ? "min-h-[260px]" : "min-h-[220px]"
-                }`}
-              >
-                <Image
-                  src={visual.src}
-                  alt={visual.title}
-                  fill
-                  sizes="(min-width: 1024px) 28vw, 100vw"
-                  className="object-cover transition duration-[1200ms] group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#07120e]/66 via-[#07120e]/8 to-transparent" />
-                <div className="absolute bottom-5 left-5 right-5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bd7a]">
-                    {visual.eyebrow}
-                  </p>
-                  <p className="font-display mt-1 text-2xl font-semibold text-[#fbf4e8]">{visual.title}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function Activities() {
-  return (
-    <section id="activities" className="bg-[#efe6d6] px-5 py-28 md:px-8 md:py-36">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-12 lg:grid-cols-[0.72fr_1fr] lg:items-end">
-          <SectionHeading
-            eyebrow="Activités"
-            title="Des instants rares, gravés dans le corps."
-            copy="Chaque pratique est pensée pour vous faire ralentir, ressentir et revenir à vous."
+          {/* Hover glow */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 0%, rgba(216,189,122,0.14) 0%, transparent 65%)",
+            }}
           />
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8 }}
-            className="hidden justify-end lg:flex"
-          >
-            <p className="vertical-title text-xs font-semibold uppercase tracking-[0.38em] text-[#8f6f38]">
-              Spiritualite · Nature · Presence
-            </p>
-          </motion.div>
+          <div className="relative flex h-full flex-col lg:flex-row">
+            {/* Image — top on mobile, left on desktop */}
+            <div className="relative h-52 w-full overflow-hidden lg:h-full lg:w-[42%]">
+              <Image
+                src={item.image}
+                alt={item.title}
+                fill
+                sizes="(min-width: 1024px) 25vw, 100vw"
+                className={`object-cover transition duration-[1200ms] ease-out group-hover:scale-[1.06] ${item.imgPos}`}
+              />
+              {/* Soft fade into the card body — vertical on mobile, horizontal on desktop */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a1a14] lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-[#0a1a14]" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8bd7a]/45 to-transparent" />
+            </div>
+            {/* Content */}
+            <div className="relative flex flex-1 flex-col p-6 pr-16 lg:p-7 lg:pr-20">
+              <h3 className="font-display mt-3 text-2xl font-semibold leading-tight text-[#fbf4e8] md:text-[26px] pr-6">
+                {item.title}
+              </h3>
+              <p className="mt-5 text-sm leading-7 text-[#c9c1b4]">{item.short}</p>
+
+              {/* + button */}
+              <button
+                type="button"
+                aria-label={`En savoir plus sur ${item.title}`}
+                onClick={() => setOpen(true)}
+                className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d8bd7a]/40 bg-[#d8bd7a]/10 text-[#d8bd7a] transition duration-300 hover:rotate-90 hover:border-[#d8bd7a] hover:bg-[#d8bd7a] hover:text-[#07120e]"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-20 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {activities.map((activity, index) => (
+        {/* ─── BACK ─── */}
+        <div
+          className="absolute inset-0 overflow-hidden rounded-[14px] border border-[#d8bd7a]/55 bg-[#0a1a14]/95 shadow-[0_30px_70px_rgba(0,0,0,0.45)]"
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}
+        >
+          {/* Subtle warm gradient on back */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{
+              background:
+                "radial-gradient(ellipse at top right, rgba(216,189,122,0.14) 0%, transparent 55%), radial-gradient(ellipse at bottom left, rgba(154,118,56,0.12) 0%, transparent 60%)",
+            }}
+          />
+          {/* Gold hairlines */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8bd7a]/55 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#d8bd7a]/30 to-transparent" />
+
+          <div className="relative flex h-full flex-col justify-between p-7 pr-16 md:p-8 md:pr-20">
+            <div>
+              <h3 className="font-display mt-3 text-2xl font-semibold leading-tight text-[#d8bd7a] md:text-[26px] pr-6">
+                {item.title}
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-[#e6dccb] md:text-[15px]">{item.details}</p>
+            </div>
+            <div className="gold-divider mt-6" />
+
+            {/* − button */}
+            <button
+              type="button"
+              aria-label="Fermer le détail"
+              onClick={() => setOpen(false)}
+              className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d8bd7a]/55 bg-[#d8bd7a]/15 text-[#d8bd7a] transition duration-300 hover:rotate-180 hover:border-[#d8bd7a] hover:bg-[#d8bd7a] hover:text-[#07120e]"
+            >
+              <Minus className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOCATION  (3 distinct cards: Fès / Vichy / Sefrou)
+══════════════════════════════════════════════════════════════ */
+
+function Location() {
+  return (
+    <section id="location" className="bg-[#efe6d6] px-5 py-28 md:px-8 md:py-36">
+      <div className="mx-auto max-w-7xl">
+        <SectionHeading
+          eyebrow="Lieu d'exception"
+          title="Trois lieux d'exception, une seule expérience."
+          copy="Fès, Vichy Thermal et Sefrou — trois ambiances complémentaires, choisies avec soin pour leur authenticité et leur pouvoir d'apaisement."
+        />
+        <div className="mt-20 grid gap-6 md:grid-cols-3">
+          {locationCards.map((card, index) => (
             <motion.article
-              key={activity.title}
+              key={card.title}
               variants={fadeUp}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.8, delay: index * 0.08 }}
-              className="group luxury-shadow relative min-h-[520px] overflow-hidden rounded-[10px] bg-[#07120e]"
+              transition={{ duration: 0.85, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="group luxury-shadow relative h-[520px] overflow-hidden rounded-[12px] bg-[#07120e] md:h-[560px]"
             >
               <Image
-                src={activity.image}
-                alt={activity.title}
+                src={card.image}
+                alt={card.title}
                 fill
-                sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
-                className="object-cover transition duration-[1200ms] group-hover:scale-110"
+                sizes="(min-width: 768px) 33vw, 100vw"
+                className="object-cover transition duration-[1400ms] ease-out group-hover:scale-[1.06]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#07120e] via-[#07120e]/45 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-7">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#07120e] via-[#07120e]/35 to-transparent" />
+              <div className="absolute inset-x-7 bottom-7">
                 <div className="gold-divider mb-5" />
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d8bd7a]">
-                  {activity.subtitle}
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#d8bd7a]">
+                  {card.subtitle}
                 </p>
-                <h3 className="font-display mt-2 text-4xl font-semibold text-[#fbf4e8]">{activity.title}</h3>
-                <p className="mt-4 text-sm leading-7 text-[#c9bfaf] md:opacity-90 md:transition md:duration-500 md:group-hover:opacity-100">
-                  {activity.description}
-                </p>
-                <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#9a8970]">
-                  {activity.atmosphere}
-                </p>
+                <h3 className="font-display mt-2 text-4xl font-semibold text-[#fbf4e8] md:text-5xl">
+                  {card.title}
+                </h3>
+                <p className="mt-4 text-sm leading-7 text-[#cfc6b8]">{card.description}</p>
               </div>
             </motion.article>
           ))}
@@ -1182,119 +798,7 @@ function Activities() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LOCATION
-══════════════════════════════════════════════════════════════ */
-
-function Location() {
-  return (
-    <section id="location" className="relative overflow-hidden bg-[#f7f0e4] px-5 py-28 md:px-8 md:py-36">
-      <div className="pointer-events-none absolute left-0 top-0 h-full w-full opacity-[0.05]">
-        <Image src="/images/thermal-pool.jpeg" alt="" fill sizes="100vw" className="object-cover" />
-      </div>
-      <div className="relative mx-auto max-w-7xl">
-        <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -32 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8f6f38]">Lieu signature</p>
-            <h2 className="font-display mt-5 text-5xl font-semibold leading-[1.02] text-[#07120e] md:text-7xl">
-              Vichy Céleste à Fès — Thermes de Moulay Yacoub
-            </h2>
-            <p className="mt-6 max-w-lg text-xl leading-9 text-[#5d574c]">
-              Entre eau thermale, silence et hospitalité marocaine raffinée.
-            </p>
-
-            <div className="mt-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8f6f38]">
-                Pourquoi ce lieu est unique
-              </p>
-              <div className="mt-6 grid gap-4">
-                {locationStory.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.text} className="flex items-start gap-4">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#9a7638]/12 text-[#9a7638]">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <p className="text-base leading-7 text-[#5d574c]">{item.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Editorial image stack */}
-          <motion.div
-            initial={{ opacity: 0, x: 32 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-            className="relative h-[620px]"
-          >
-            <div className="luxury-shadow absolute right-0 top-0 h-[78%] w-[88%] overflow-hidden rounded-[10px]">
-              <Image
-                src="/images/riad.jpeg"
-                alt="Riad privé"
-                fill
-                sizes="(min-width: 1024px) 45vw, 100vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#07120e]/60 via-transparent to-transparent" />
-              <div className="absolute bottom-5 left-5 right-5">
-                <div className="gold-divider mb-3" />
-                <p className="font-display text-2xl text-[#f7f0e4]">Riad privé · Fès</p>
-              </div>
-            </div>
-            <div className="luxury-shadow absolute bottom-0 left-0 h-[52%] w-[62%] overflow-hidden rounded-[10px] border-4 border-[#f7f0e4]">
-              <Image
-                src="/images/thermal-pool.jpeg"
-                alt="Thermes de Moulay Yacoub"
-                fill
-                sizes="(min-width: 1024px) 30vw, 60vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#07120e]/55 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bd7a]">
-                  Thermal
-                </p>
-                <p className="font-display text-lg text-[#f7f0e4]">Moulay Yacoub</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="mt-20 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <motion.div
-                key={feature.title}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.7, delay: index * 0.06 }}
-                className="rounded-[10px] border border-[#c19a55]/25 bg-white/45 p-6 shadow-[0_18px_50px_rgba(62,48,28,0.1)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-[#c19a55]/45 hover:shadow-[0_22px_60px_rgba(62,48,28,0.16)]"
-              >
-                <Icon className="h-8 w-8 text-[#9a7638]" />
-                <h3 className="mt-6 font-display text-2xl font-semibold text-[#07120e]">{feature.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-[#62594b]">{feature.copy}</p>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════
-   PROGRAMME — cinematic tab layout
+   PROGRAMME — 4-day clean tab layout
 ══════════════════════════════════════════════════════════════ */
 
 function Programme() {
@@ -1305,21 +809,21 @@ function Programme() {
       <div className="mx-auto max-w-7xl">
         <SectionHeading
           light
-          eyebrow="Programme complet"
-          title="Quatre jours, un itinéraire clair et transformateur."
-          copy="Chaque journée vous guide doucement du ralentissement vers la reconnexion."
+          eyebrow="Programme · 4 jours"
+          title="Un itinéraire clair et transformateur."
+          copy="Mouvement, nutrition, rituels, travail émotionnel, détox, méditation. Chaque jour, une étape vers la reconnexion à soi."
         />
 
-        <div className="mt-16 flex flex-wrap justify-center gap-2">
+        <div className="mt-14 flex flex-wrap justify-center gap-4">
           {detailedProgram.map((day, index) => (
             <button
               key={day.day}
               type="button"
               onClick={() => setActiveDay(index)}
-              className={`rounded-full border px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] transition duration-300 ${
+              className={`rounded-full border px-10 py-4 text-lg font-bold uppercase tracking-[0.18em] transition duration-400 ease-out ${
                 activeDay === index
-                  ? "border-[#d8bd7a] bg-[#d8bd7a] text-[#07120e]"
-                  : "border-white/20 text-[#c9c1b4] hover:border-[#d8bd7a]/55 hover:text-[#d8bd7a]"
+                  ? "border-[#d8bd7a] bg-[#d8bd7a] text-[#07120e] shadow-[0_12px_32px_rgba(216,189,122,0.45)]"
+                  : "border-white/30 text-[#c9c1b4] hover:border-[#d8bd7a]/70 hover:text-[#d8bd7a] hover:bg-white/[0.06]"
               }`}
             >
               {day.day}
@@ -1338,7 +842,7 @@ function Programme() {
                 transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                 className="mt-10 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]"
               >
-                <div className="relative min-h-72 overflow-hidden rounded-[10px] lg:min-h-full">
+                <div className="relative min-h-72 overflow-hidden rounded-[12px] lg:min-h-full">
                   <Image
                     src={day.image}
                     alt={day.title}
@@ -1356,7 +860,7 @@ function Programme() {
                   </div>
                 </div>
 
-                <div className="rounded-[10px] border border-white/10 bg-white/[0.04] p-6 md:p-8">
+                <div className="rounded-[12px] border border-white/10 bg-white/[0.04] p-6 md:p-8">
                   <div className="mb-6">
                     <span className="inline-flex items-center gap-2 rounded-full border border-[#d8bd7a]/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-[#d8bd7a]">
                       <CalendarDays className="h-3.5 w-3.5" />
@@ -1375,7 +879,7 @@ function Programme() {
                       return (
                         <div
                           key={`${day.day}-${item.time}`}
-                          className="grid gap-3 rounded-[10px] bg-white/[0.05] p-4 transition duration-200 hover:bg-white/[0.085] md:grid-cols-[160px_1fr] md:gap-4"
+                          className="grid gap-3 rounded-[12px] bg-white/[0.05] p-4 transition duration-200 hover:bg-white/[0.085] md:grid-cols-[120px_1fr] md:gap-4"
                         >
                           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#d8bd7a]">
                             <Icon className="h-3.5 w-3.5 shrink-0" />
@@ -1391,62 +895,47 @@ function Programme() {
             ) : null
           )}
         </AnimatePresence>
-
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          transition={{ duration: 0.75 }}
-          className="mt-16 flex flex-col items-center gap-6 border-t border-white/10 pt-14 sm:flex-row sm:justify-between"
-        >
-          <p className="max-w-lg text-center text-base leading-7 text-[#a8a098] sm:text-left">
-            Un programme conçu pour vous transformer en douceur — jour après jour, couche après couche.
-          </p>
-          <CtaButton href="#offer">Voir l&apos;offre de lancement</CtaButton>
-        </motion.div>
       </div>
     </section>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   WHAT YOU LEAVE WITH
+   LEARN  ("Ce que vous apprendrez" — 12 items)
 ══════════════════════════════════════════════════════════════ */
 
-function WhatYouLeaveWith() {
+function Learn() {
   return (
-    <section className="relative overflow-hidden bg-[#07120e] px-5 py-28 text-[#f7f0e4] md:px-8 md:py-36">
-      <div className="pointer-events-none absolute inset-0 opacity-[0.04]">
+    <section id="learn" className="relative overflow-hidden bg-[#efe6d6] px-5 py-28 md:px-8 md:py-36">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.05]">
         <Image src="/images/riad-terrace.jpeg" alt="" fill sizes="100vw" className="object-cover" />
       </div>
       <div className="relative mx-auto max-w-7xl">
         <SectionHeading
-          light
-          eyebrow="Transformation"
-          title="Ce que vous emporterez avec vous"
-          copy="Au-delà du séjour, des repères concrets pour continuer à prendre soin de vous."
+          eyebrow="Apprentissages"
+          title="Ce que vous apprendrez durant cette expérience"
+          copy="Une immersion complète en santé holistique. Des outils concrets, applicables au quotidien, pour transformer votre rapport au corps et au mental."
         />
-        <div className="mt-20 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {whatYouLeaveWith.map((item, index) => {
+        <div className="mt-20 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {learnings.map((item, index) => {
             const Icon = item.icon;
             return (
-              <motion.article
+              <motion.div
                 key={item.title}
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.7, delay: index * 0.06 }}
-                className="group relative overflow-hidden rounded-[10px] border border-[#d8bd7a]/15 bg-white/[0.04] p-7 backdrop-blur-sm transition duration-500 hover:border-[#d8bd7a]/40 hover:bg-white/[0.07]"
+                transition={{ duration: 0.6, delay: index * 0.04 }}
+                className="group flex items-center gap-5 rounded-[12px] border border-[#c19a55]/25 bg-[#fbf6ec]/75 p-6 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-[#c19a55]/55 hover:bg-white/85"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#d8bd7a]/10 text-[#d8bd7a]">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#c19a55]/35 bg-white/65 text-[#9a7638] transition group-hover:bg-[#d8bd7a]/20">
                   <Icon className="h-6 w-6" />
                 </div>
-                <h3 className="font-display mt-6 text-2xl font-semibold text-[#fbf4e8]">{item.title}</h3>
-                <p className="mt-4 text-sm leading-7 text-[#b0a898]">{item.copy}</p>
-                <div className="mt-6 h-px w-10 bg-[#d8bd7a]/45 transition-all duration-700 group-hover:w-full" />
-              </motion.article>
+                <h3 className="font-display text-xl font-semibold leading-snug text-[#07120e] md:text-2xl">
+                  {item.title}
+                </h3>
+              </motion.div>
             );
           })}
         </div>
@@ -1456,166 +945,129 @@ function WhatYouLeaveWith() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SUPERVISION
+   ENCADREMENT — 3 cartes premium
 ══════════════════════════════════════════════════════════════ */
 
-function Supervision() {
+function DoctorAuthority() {
   return (
-    <section id="supervision" className="relative overflow-hidden bg-[#efe6d6] px-5 py-28 md:px-8 md:py-36">
-      {/* Subtle Moroccan-tone background gradient for warmth */}
+    <section
+      id="supervision"
+      className="relative overflow-hidden bg-[#07120e] px-5 py-28 text-[#f7f0e4] md:px-8 md:py-36"
+    >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
+        className="pointer-events-none absolute inset-0 opacity-50"
         style={{
           background:
-            "radial-gradient(ellipse at top, rgba(216,189,122,0.08) 0%, transparent 55%), radial-gradient(ellipse at bottom, rgba(154,118,56,0.06) 0%, transparent 60%)",
+            "radial-gradient(ellipse at top, rgba(216,189,122,0.10) 0%, transparent 55%), radial-gradient(ellipse at bottom, rgba(154,118,56,0.08) 0%, transparent 60%)",
         }}
       />
       <div className="relative mx-auto max-w-7xl">
         <SectionHeading
+          light
           eyebrow="Encadrement"
-          title="Un encadrement expert et bienveillant"
-          copy="Chaque moment est accompagné avec écoute, présence et exigence, pour préserver un cadre sûr, intime et profondément humain."
+          title="Un accompagnement expert et bienveillant"
+          copy="Une approche holistique complète du corps, du mental et de l'équilibre émotionnel."
         />
 
-        <div className="mt-20 grid gap-7 md:grid-cols-3">
-          {supervision.map((person, index) => (
-            <SupervisionCard key={person.title} person={person} index={index} />
-          ))}
-        </div>
+        <div className="mt-20 grid gap-6 md:grid-cols-3">
+          {/* Docteur Laila Qottaya */}
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.8, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+            className="luxury-shadow group relative h-[580px] overflow-hidden rounded-[14px] border border-[#d8bd7a]/25 bg-[#07120e]"
+          >
+            <Image
+              src="/images/lailaquttaya.jpeg"
+              alt="Docteur Laila Qottaya"
+              fill
+              sizes="(min-width: 768px) 33vw, 100vw"
+              className="object-cover transition duration-[1400ms] ease-out group-hover:scale-[1.06]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#07120e] via-[#07120e]/40 to-transparent" />
+            <div className="absolute inset-x-6 bottom-6">
+              <div className="gold-divider mb-4" />
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#d8bd7a]">
+                Médecine holistique
+              </p>
+              <h3 className="font-display mt-2 text-3xl font-semibold text-[#fbf4e8]">
+                Docteur Laila Qottaya
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-[#cfc6b8]">
+                Médecine holistique, bien-être global, accompagnement émotionnel et équilibre corps/âme/esprit.
+              </p>
+            </div>
+          </motion.div>
 
-        {/* Trust cues */}
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.75, delay: 0.3 }}
-          className="mt-14 grid gap-3 sm:grid-cols-3"
-        >
-          {trustCues.map((cue) => {
-            const Icon = cue.icon;
-            return (
-              <div
-                key={cue.text}
-                className="flex items-center gap-3 rounded-full border border-[#c19a55]/30 bg-white/65 px-5 py-3 backdrop-blur transition hover:border-[#c19a55]/55"
-              >
-                <Icon className="h-4 w-4 shrink-0 text-[#9a7638]" />
-                <span className="text-sm font-medium text-[#5d574c]">{cue.text}</span>
-              </div>
-            );
-          })}
-        </motion.div>
+          {/* Coach Yoga */}
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="luxury-shadow group relative h-[580px] overflow-hidden rounded-[14px] border border-[#d8bd7a]/25 bg-[#07120e]"
+          >
+            <Image
+              src="/images/coachyoga2.jpeg"
+              alt="Coach Yoga"
+              fill
+              sizes="(min-width: 768px) 33vw, 100vw"
+              className="scale-125 object-cover transition duration-[1400ms] ease-out group-hover:scale-[1.32]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#07120e] via-[#07120e]/40 to-transparent" />
+            <div className="absolute inset-x-6 bottom-6 z-10">
+              <div className="gold-divider mb-4" />
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#d8bd7a]">
+                Mouvement conscient
+              </p>
+              <h3 className="font-display mt-2 text-3xl font-semibold text-[#fbf4e8]">
+                Coach Yoga & sport‑médical
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-[#cfc6b8]">
+                Coach certifiée sport-médical, spécialisée en yoga postural, méditation et respiration consciente.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Personnalité surprise */}
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.8, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="luxury-shadow group relative h-[580px] overflow-hidden rounded-[14px] border border-[#d8bd7a]/25 bg-[#07120e]"
+          >
+            <Image
+              src="/images/person-annonym.jpeg"
+              alt="Personnalité surprise"
+              fill
+              sizes="(min-width: 768px) 33vw, 100vw"
+              className="object-cover transition duration-[1400ms] ease-out group-hover:scale-[1.06] blur-[1px]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#07120e] via-[#07120e]/40 to-transparent" />
+            <div className="absolute inset-x-6 bottom-6">
+              <div className="gold-divider mb-4" />
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#d8bd7a]">
+                Invitée inspirante · à dévoiler
+              </p>
+              <h3 className="font-display mt-2 text-3xl font-semibold text-[#fbf4e8]">
+                Personnalité surprise
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-[#cfc6b8]">
+                Une personnalité inspirante pour partager, inspirer et élever votre expérience.
+              </p>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
 }
-
-function SupervisionCard({ person, index }: { person: SupervisionPerson; index: number }) {
-  const Icon = person.icon;
-  return (
-    <motion.article
-      variants={fadeUp}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.85, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
-      className="group flex flex-col overflow-hidden rounded-[12px] border border-[#c19a55]/30 bg-[#fbf6ec]/85 shadow-[0_28px_70px_rgba(57,45,27,0.12)] transition duration-500 hover:-translate-y-1.5 hover:border-[#c19a55]/55 hover:shadow-[0_38px_90px_rgba(57,45,27,0.22)]"
-    >
-      {/* Editorial portrait area — tall, breathing space, matched grading across all three cards */}
-      <div className="relative h-[460px] overflow-hidden md:h-[500px]">
-        <PortraitVisual
-          image={person.image}
-          alt={person.title}
-          role={person.role}
-          suffix={person.captionSuffix}
-        />
-      </div>
-
-      {/* Text content */}
-      <div className="flex flex-1 flex-col p-8 md:p-9">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#c19a55]/35 bg-white/70 text-[#9a7638] transition duration-300 group-hover:border-[#c19a55]/65 group-hover:bg-[#d8bd7a]/18">
-          <Icon className="h-5 w-5" />
-        </div>
-        <h3 className="font-display mt-6 text-3xl font-semibold leading-tight text-[#07120e]">
-          {person.title}
-        </h3>
-        <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a7638]">
-          {person.subtitle}
-        </p>
-        <p className="mt-5 text-sm leading-7 text-[#5d574c]">{person.copy}</p>
-      </div>
-    </motion.article>
-  );
-}
-
-/**
- * Shared visual frame — used across all 3 supervision cards to enforce
- * one unified editorial look: same height, hairlines, vignette, warm grade,
- * and caption layout.
- */
-function CardFrame({ role, suffix }: { role: string; suffix?: string }) {
-  return (
-    <>
-      {/* Bottom gradient for caption readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#07120e]/72 via-[#07120e]/12 to-transparent" />
-      {/* Warm Moroccan sun grade — matches all three cards */}
-      <div
-        className="absolute inset-0 mix-blend-soft-light opacity-65"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(216,189,122,0.22) 0%, transparent 48%, rgba(154,118,56,0.18) 100%)",
-        }}
-      />
-      {/* Subtle editorial vignette */}
-      <div
-        className="absolute inset-0 mix-blend-overlay opacity-35"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 35%, rgba(7,18,14,0.55) 100%)",
-        }}
-      />
-      {/* Top gold hairline */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8bd7a]/55 to-transparent" />
-      {/* Caption */}
-      <div className="absolute inset-x-6 bottom-6">
-        <div className="gold-divider mb-3" />
-        <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#d8bd7a]">
-          {role}
-          {suffix ? <span className="text-[#d8bd7a]/65"> · {suffix}</span> : null}
-        </p>
-      </div>
-    </>
-  );
-}
-
-function PortraitVisual({
-  image,
-  alt,
-  role,
-  suffix,
-}: {
-  image: string;
-  alt: string;
-  role: string;
-  suffix?: string;
-}) {
-  return (
-    <>
-      <Image
-        src={image}
-        alt={alt}
-        fill
-        sizes="(min-width: 1024px) 30vw, (min-width: 768px) 50vw, 100vw"
-        className="object-cover transition duration-[1500ms] ease-out group-hover:scale-[1.025]"
-        // Reveal more upper body — face sits in the top third, not centred on the lens
-        style={{ objectPosition: "center 18%" }}
-      />
-      <CardFrame role={role} suffix={suffix} />
-    </>
-  );
-}
-
 
 /* ═══════════════════════════════════════════════════════════
    TESTIMONIALS
@@ -1633,7 +1085,7 @@ function Testimonials() {
   }, []);
 
   return (
-    <section id="testimonials" className="bg-[#07120e] px-5 py-28 text-[#f7f0e4] md:px-8 md:py-36">
+    <section id="testimonials" className="bg-[#0f2a20] px-5 py-28 text-[#f7f0e4] md:px-8 md:py-36">
       <div className="mx-auto max-w-5xl">
         <SectionHeading
           light
@@ -1641,7 +1093,7 @@ function Testimonials() {
           title="Ce qui reste après le silence."
           copy="Des mots sobres pour une expérience qui s'inscrit souvent au-delà des mots."
         />
-        <div className="luxury-shadow relative mt-16 overflow-hidden rounded-[10px] border border-[#d8bd7a]/20 bg-white/[0.04] p-8 backdrop-blur md:p-16">
+        <div className="luxury-shadow relative mt-16 overflow-hidden rounded-[14px] border border-[#d8bd7a]/25 bg-white/[0.04] p-8 backdrop-blur md:p-16">
           <Quote className="h-12 w-12 text-[#a37d3d]" />
           <AnimatePresence mode="wait">
             <motion.div
@@ -1657,20 +1109,13 @@ function Testimonials() {
               <div className="mt-10">
                 <div className="mb-3 flex gap-1">
                   {Array.from({ length: current.stars }).map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-[#d8bd7a]/80 text-[#d8bd7a]/80" />
+                    <Star key={i} className="h-4 w-4 fill-[#d8bd7a] text-[#d8bd7a]" />
                   ))}
                 </div>
                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#f7f0e4]">
                   {current.name}
                 </p>
-                <div className="mt-1.5 flex items-center gap-3">
-                  <p className="text-sm text-[#9a8970]">{current.role}</p>
-                  <span className="text-[#4a443e]">·</span>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-[#9a8970]">
-                    <MapPin className="h-3 w-3 text-[#d8bd7a]/60" />
-                    {current.city}
-                  </span>
-                </div>
+                <p className="mt-1 text-sm text-[#9a8970]">{current.role}</p>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -1694,16 +1139,21 @@ function Testimonials() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LAUNCH OFFER
+   LAUNCH OFFER  (dates + places very visible)
 ══════════════════════════════════════════════════════════════ */
 
 function LaunchOffer() {
   const { open: openBooking } = useBookingModal();
+
   return (
-    <section id="offer" className="relative overflow-hidden bg-[#f7f0e4] px-5 py-28 md:px-8 md:py-36">
-      <div className="pointer-events-none absolute inset-0 opacity-[0.08]">
-        <Image src="/images/table.jpeg" alt="" fill sizes="100vw" className="object-cover" />
-      </div>
+    <section
+      id="offer"
+      className="relative overflow-hidden px-5 py-28 md:px-8 md:py-36"
+      style={{
+        background:
+          "linear-gradient(180deg, #F7F1E7 0%, #F3E8D8 100%)",
+      }}
+    >
       <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
         <motion.div
           initial={{ opacity: 0, x: -28 }}
@@ -1715,21 +1165,39 @@ function LaunchOffer() {
           <h2 className="font-display mt-5 text-5xl font-semibold leading-[1.02] text-[#07120e] md:text-7xl">
             Offre exceptionnelle de lancement
           </h2>
-          <p className="mt-6 max-w-xl text-lg leading-9 text-[#5d574c]">
-            Une retraite immersive premium de 4 jours, proposée en tarif de lancement pour un groupe volontairement
-            restreint.
-          </p>
-          <div className="mt-7 inline-flex items-center gap-3 rounded-full border border-[#c19a55]/35 bg-white/65 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#07120e] backdrop-blur">
-            <Users className="h-5 w-5 text-[#9a7638]" />
-            Places limitées — groupe intime de 20 participants.
-          </div>
-          <div className="mt-12 hidden lg:block">
-            <p className="font-display mb-6 text-xl leading-snug text-[#8f6f38] md:text-2xl">
-              &ldquo;Un investissement rare pour une transformation profonde.&rdquo;
-            </p>
-            <div className="flex flex-col gap-3">
-              <CtaButton onClick={() => openBooking("pricing")}>Réserver ma place</CtaButton>
+
+          {/* Three big visibility chips */}
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[12px] border border-[#c19a55]/40 bg-white/65 p-5 text-center backdrop-blur">
+              <CalendarDays className="mx-auto h-6 w-6 text-[#9a7638]" />
+              <p className="font-display mt-3 text-xl font-semibold text-[#07120e]">{DATES}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8f6f38]">
+                4 jours
+              </p>
             </div>
+            <div className="rounded-[12px] border border-[#c19a55]/40 bg-white/65 p-5 text-center backdrop-blur">
+              <BadgeCheck className="mx-auto h-6 w-6 text-[#9a7638]" />
+              <p className="font-display mt-3 text-xl font-semibold text-[#07120e]">7 960 DH</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8f6f38]">
+                Tarif tout inclus
+              </p>
+            </div>
+            <div className="rounded-[12px] border border-[#c19a55]/40 bg-white/65 p-5 text-center backdrop-blur">
+              <Users className="mx-auto h-6 w-6 text-[#9a7638]" />
+              <p className="font-display mt-3 text-xl font-semibold text-[#07120e]">20 places</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8f6f38]">
+                Uniquement
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-8 max-w-xl text-base leading-8 text-[#5d574c]">
+            Une retraite premium, privatisée et profondément accompagnée, proposée en tarif de lancement pour un
+            groupe volontairement restreint.
+          </p>
+
+          <div className="mt-10 hidden lg:block">
+            <CtaButton onClick={() => openBooking("pricing")}>Réserver ma place</CtaButton>
           </div>
         </motion.div>
 
@@ -1738,71 +1206,80 @@ function LaunchOffer() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="luxury-shadow overflow-hidden rounded-[10px] border border-[#d8bd7a]/40 bg-[#07120e] text-[#f7f0e4]"
+          className="overflow-hidden rounded-[14px]"
+          style={{
+            background: "#041B16",
+            border: "1px solid rgba(212,175,55,0.18)",
+            boxShadow:
+              "0 0 20px rgba(212,175,55,0.12), 0 28px 70px rgba(0,0,0,0.35)",
+          }}
         >
-          <div className="border-b border-[#d8bd7a]/20 p-8 md:p-10">
-            <div className="flex flex-wrap items-center justify-between gap-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#d8bd7a]">
-                  Tarif exceptionnel
-                </p>
-                <p className="font-display mt-3 text-6xl font-semibold leading-none text-[#fbf4e8] md:text-8xl">
-                  7 960 DH
-                </p>
-                <p className="mt-3 text-sm text-[#9a8868]">
-                  Une retraite immersive premium de 4 jours.
-                </p>
-              </div>
-              <BadgeCheck className="h-16 w-16 text-[#d8bd7a]" />
-            </div>
-            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#cfc6b8]">
-              Le tarif réunit l&rsquo;essentiel : hébergement, transport, gastronomie, pratiques holistiques,
-              thermes et encadrement.
-            </p>
-          </div>
-          <div className="grid gap-3 p-8 sm:grid-cols-2 md:p-10">
-            {offerItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="flex items-center gap-3 rounded-[10px] bg-white/[0.055] p-4">
-                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d8bd7a]/12 text-[#d8bd7a]">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="text-sm leading-6 text-[#e6dccb]">{item.title}</span>
+          <div className="relative">
+            <div
+              className="border-b p-8 md:p-10"
+              style={{ borderColor: "rgba(212,175,55,0.18)" }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#D4AF37]">
+                Tarif exceptionnel
+              </p>
+              <div className="mt-3">
+                <div className="hidden md:block">
+                  <p className="font-display text-6xl font-semibold leading-none text-[#F8F4ED] md:text-7xl">
+                    Seulement 7 960 DH
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-          <div className="border-t border-[#d8bd7a]/20 p-8 md:p-10">
-            <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[#9a8868]">
-                <Users className="h-3.5 w-3.5 text-[#d8bd7a]/70" />
-                Places limitées à 20 participantes
-              </span>
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[#9a8868]">
-                <Gem className="h-3.5 w-3.5 text-[#d8bd7a]/70" />
-                Expérience intimiste
-              </span>
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[#9a8868]">
-                <Car className="h-3.5 w-3.5 text-[#d8bd7a]/70" />
-                Transport VIP inclus
-              </span>
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[#9a8868]">
-                <BedDouble className="h-3.5 w-3.5 text-[#d8bd7a]/70" />
-                Hébergement premium
-              </span>
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[#9a8868]">
-                <HeartHandshake className="h-3.5 w-3.5 text-[#d8bd7a]/70" />
-                Accompagnement personnalisé
-              </span>
+                <div className="md:hidden">
+                  <p className="font-display text-2xl font-semibold leading-tight text-[#CFC6B8]">
+                    Seulement
+                  </p>
+                  <p className="font-display text-5xl font-semibold leading-none text-[#F8F4ED]" style={{ whiteSpace: "nowrap" }}>
+                    7 960 DH
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37] sm:text-sm">
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/35 bg-[#D4AF37]/10 px-4 py-2 sm:px-3 sm:py-1.5">
+                  <CalendarDays className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                  {DATES}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/35 bg-[#D4AF37]/10 px-4 py-2 sm:px-3 sm:py-1.5">
+                  <Users className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                  {PLACES}
+                </span>
+              </div>
+              <p className="mt-6 max-w-2xl text-sm leading-7 text-[#CFC6B8]">
+                Hébergement, transport, gastronomie, pratiques holistiques, thermes, hijama sèche et encadrement.
+              </p>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="grid gap-3 p-8 sm:grid-cols-2 md:p-10">
+              {offerItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.title}
+                    className="flex items-center gap-3 rounded-[10px] p-4"
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/12 text-[#D4AF37]">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm leading-6 text-[#E6DCCB]">{item.title}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div
+              className="border-t p-8 md:p-10"
+              style={{ borderColor: "rgba(212,175,55,0.18)" }}
+            >
               <CtaButton onClick={() => openBooking("pricing_card")}>Réserver ma place</CtaButton>
             </div>
           </div>
         </motion.div>
 
-        <div className="flex flex-col gap-3 lg:hidden">
+        <div className="lg:hidden">
           <CtaButton onClick={() => openBooking("pricing_mobile")}>Réserver ma place</CtaButton>
         </div>
       </div>
@@ -1811,7 +1288,7 @@ function LaunchOffer() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   FAQ
+   FAQ  (6 items max)
 ══════════════════════════════════════════════════════════════ */
 
 function FAQ() {
@@ -1823,7 +1300,6 @@ function FAQ() {
         <SectionHeading
           eyebrow="Questions fréquentes"
           title="Tout ce qu'il faut savoir avant de réserver"
-          copy="Les informations essentielles pour comprendre précisément ce que comprend votre retraite."
         />
         <div className="mt-16 grid gap-3">
           {faqs.map((faq, index) => {
@@ -1836,7 +1312,7 @@ function FAQ() {
                 whileInView="visible"
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.6, delay: index * 0.04 }}
-                className="overflow-hidden rounded-[10px] border border-[#c19a55]/25 bg-[#fbf6ec]/85 transition hover:border-[#c19a55]/45"
+                className="overflow-hidden rounded-[12px] border border-[#c19a55]/25 bg-[#fbf6ec]/85 transition hover:border-[#c19a55]/45"
               >
                 <button
                   type="button"
@@ -1877,11 +1353,12 @@ function FAQ() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CLOSING CTA
+   FINAL CTA
 ══════════════════════════════════════════════════════════════ */
 
 function ClosingCta() {
   const { open: openBooking } = useBookingModal();
+
   return (
     <section
       id="reserve"
@@ -1889,7 +1366,7 @@ function ClosingCta() {
     >
       <Image
         src="/images/riad.jpeg"
-        alt="Private riad pool"
+        alt="Voyage Holistique"
         fill
         sizes="100vw"
         className="object-cover opacity-45"
@@ -1907,16 +1384,27 @@ function ClosingCta() {
           Revenez à vous. Élevez-vous.
         </h2>
         <p className="mt-7 max-w-2xl text-lg leading-9 text-[#ddd2bf]">
-          Une expérience rare pour ralentir, respirer et repartir avec une énergie renouvelée.
+          Les places sont volontairement limitées afin de préserver l&rsquo;intimité et la qualité de
+          l&rsquo;expérience.
         </p>
-        <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-[#d8bd7a]/30 bg-[#d8bd7a]/10 px-5 py-2">
-          <Users className="h-4 w-4 text-[#d8bd7a]" />
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#d8bd7a]">
-            Places limitées à 20 participants
+
+        <div className="mt-6 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#d8bd7a]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#d8bd7a]/35 bg-[#d8bd7a]/12 px-4 py-1.5">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {DATES}
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#d8bd7a]/35 bg-[#d8bd7a]/12 px-4 py-1.5">
+            <Users className="h-3.5 w-3.5" />
+            {PLACES}
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#d8bd7a]/35 bg-[#d8bd7a]/12 px-4 py-1.5">
+            <BadgeCheck className="h-3.5 w-3.5" />
+            {PRICE}
           </span>
         </div>
+
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-          <CtaButton onClick={() => openBooking("closing_cta")}>Réserver ma place</CtaButton>
+          <CtaButton onClick={() => openBooking("closing_cta")}>Je réserve ma place</CtaButton>
         </div>
       </motion.div>
     </section>
@@ -1932,17 +1420,12 @@ function StickyBookingBar() {
   const { open: openBooking, hasBeenOpened } = useBookingModal();
 
   useEffect(() => {
-    // If the user has already opened the booking modal once, never show the
-    // sticky bar again — they've already engaged.
     if (hasBeenOpened) {
       setVisible(false);
       return;
     }
 
     const onScroll = () => {
-      // Visibility rule: show only when the pricing section (#offer) has
-      // started entering the viewport, and hide again before the closing
-      // CTA (#reserve) so the bar never overlaps the final form area.
       const offerEl = document.getElementById("offer");
       if (!offerEl) {
         setVisible(false);
@@ -1951,8 +1434,6 @@ function StickyBookingBar() {
       const offerTop = offerEl.getBoundingClientRect().top;
       const offerHasEntered = offerTop < window.innerHeight - 80;
 
-      // Fallback safety net: also unlock at 65% scroll depth in case the
-      // offer section is missing or restructured later.
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const scrollDepth = docHeight > 0 ? window.scrollY / docHeight : 0;
       const deepEnough = scrollDepth > 0.65;
@@ -1961,7 +1442,7 @@ function StickyBookingBar() {
       const reserveTop = reserveEl
         ? reserveEl.getBoundingClientRect().top + window.scrollY
         : Number.POSITIVE_INFINITY;
-      const aboveReserve = window.scrollY < reserveTop - 240;
+      const aboveReserve = window.scrollY < reserveTop - 400;
 
       setVisible((offerHasEntered || deepEnough) && aboveReserve);
     };
@@ -1979,23 +1460,21 @@ function StickyBookingBar() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 bottom-3 z-40 px-3 md:bottom-5 md:px-6"
+          className="fixed inset-x-0 bottom-5 z-40 px-3 md:bottom-8 md:px-6"
         >
-          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 rounded-full border border-[#d8bd7a]/35 bg-[#07120e]/90 px-3 py-2 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl md:px-4 md:py-2.5">
+          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 rounded-full border border-[#d8bd7a]/35 bg-[#07120e]/92 px-3 py-2 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl md:px-4 md:py-2.5">
             <div className="hidden items-center gap-3 pl-3 sm:flex">
-              <Image
-                src="/images/logo.png"
-                alt="Holistic Health Academy"
-                width={80}
-                height={24}
-                className="h-5 w-auto object-contain"
-              />
-              <span className="text-xs uppercase tracking-[0.18em] text-[#9a8970]">·</span>
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d8bd7a]">
-                Voyage Holistique
-              </span>
+              <div className="relative h-8 w-28">
+                <Image
+                  src="/images/logo.png"
+                  alt="Voyage Holistique Logo"
+                  fill
+                  sizes="112px"
+                  className="object-contain"
+                />
+              </div>
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 sm:flex-initial">
+            <div className="flex flex-1 items-center justify-end sm:flex-initial">
               <button
                 type="button"
                 onClick={() => openBooking("sticky_cta")}
@@ -2021,47 +1500,99 @@ function Footer() {
   const { openPrivacy, openLegal } = useLegalModals();
 
   return (
-    <footer className="bg-[#050b09] px-5 pb-24 pt-14 text-[#d6cbbb] md:px-8 md:pb-14">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center text-center">
-        <Image
-          src="/images/logo.png"
-          alt="Holistic Health Academy"
-          width={160}
-          height={48}
-          className="mb-4 h-9 w-auto object-contain opacity-80"
-        />
-        
-        <p className="mb-6 text-sm italic text-[#9d9487]">
-          « Une retraite intime entre corps, âme et esprit. »
-        </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-4 text-xs tracking-wide text-[#9d9487] sm:gap-6">
-          <a href="mailto:contact@holistichealth.academy" className="transition hover:text-[#d8bd7a]">
-            contact@holistichealth.academy
-          </a>
-          <span className="hidden text-[#4a443e] sm:block">·</span>
-          <a href="tel:+31625375673" className="transition hover:text-[#d8bd7a]">
-            +31 6 25 37 56 73
-          </a>
-          <span className="hidden text-[#4a443e] sm:block">·</span>
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-3 w-3 text-[#9d9487]/70" />
-            Casablanca, Morocco
-          </span>
+    <footer className="bg-[#050b09] px-5 pb-32 pt-20 text-[#d6cbbb] md:px-8 md:pb-20">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-5">
+              <div className="relative h-12 w-40 shrink-0 md:h-14 md:w-48">
+                <Image
+                  src="/images/logo.png"
+                  alt="Voyage Holistique Logo"
+                  fill
+                  sizes="(min-width: 768px) 192px, 160px"
+                  className="object-contain"
+                />
+              </div>
+              <p className="font-display text-3xl font-semibold leading-tight tracking-[0.1em] text-[#f7f0e4] md:text-4xl">
+                Voyage Holistique
+              </p>
+            </div>
+            <p className="mt-5 max-w-md text-sm leading-7 text-[#9d9487]">
+              Une retraite intime entre corps, âme et esprit par Holistic Health Academy.
+            </p>
+            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-[#d8bd7a]">
+              Fès · Sefrou · Vichy Thermal · Maroc
+            </p>
+          </div>
+          <div>
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-[#d8bd7a]">Navigation</p>
+            <div className="grid gap-3">
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-[#d8bd7a]">Contact</p>
+            <div className="grid gap-4">
+              <a
+                href={WHATSAPP}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
+              >
+                <MessageCircle className="h-4 w-4 text-[#d8bd7a]" />
+                +31 6 25 37 56 73
+              </a>
+              <a
+                href="mailto:contact@holistichealth.academy"
+                className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
+              >
+                <Mail className="h-4 w-4 text-[#d8bd7a]" />
+                contact@holistichealth.academy
+              </a>
+              <a
+                href="https://www.instagram.com/laila_qottaya/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
+              >
+                <Camera className="h-4 w-4 text-[#d8bd7a]" />
+                @laila_qottaya
+              </a>
+              <div className="flex items-center gap-3 text-sm text-[#9d9487]">
+                <MapPin className="h-4 w-4 text-[#d8bd7a]" />
+                Maarif, Casablanca · Maroc
+              </div>
+            </div>
+          </div>
         </div>
 
-        <p className="mt-6 text-[11px] uppercase tracking-[0.22em] text-[#4a443e]">
-          Expérience privée organisée par Holistic Health Academy
-        </p>
-
-        <div className="mt-8 flex w-full flex-wrap items-center justify-center gap-6 border-t border-white/5 pt-6 text-xs text-[#4a443e]">
-          <p>© {year} Holistic Health Academy.</p>
-          <button type="button" onClick={openPrivacy} className="transition hover:text-[#9d9487]">
-            Politique de confidentialité
-          </button>
-          <button type="button" onClick={openLegal} className="transition hover:text-[#9d9487]">
-            Mentions légales
-          </button>
+        <div className="mt-14 flex flex-col gap-5 border-t border-white/5 pt-8 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-[#4a443e]">© {year} Voyage Holistique · Holistic Health Academy.</p>
+          <div className="flex flex-wrap gap-6">
+            <button
+              type="button"
+              onClick={openPrivacy}
+              className="text-xs text-[#4a443e] transition hover:text-[#9d9487]"
+            >
+              Politique de confidentialité
+            </button>
+            <button
+              type="button"
+              onClick={openLegal}
+              className="text-xs text-[#4a443e] transition hover:text-[#9d9487]"
+            >
+              Mentions légales
+            </button>
+          </div>
         </div>
       </div>
     </footer>
@@ -2077,21 +1608,19 @@ export default function RetreatLanding() {
     <LegalModalProvider>
       <BookingModalProvider>
         <main>
-        <Header />
-        <Hero />
-        <Experience />
-        <WhoIsItFor />
-        <Activities />
-        <Location />
-        <Programme />
-        <WhatYouLeaveWith />
-        <Supervision />
-        <Testimonials />
-        <LaunchOffer />
-        <FAQ />
-        <ClosingCta />
-        <StickyBookingBar />
-        <Footer />
+          <Header />
+          <Hero />
+          <Transformation />
+          <Location />
+          <Programme />
+          <Learn />
+          <DoctorAuthority />
+          <Testimonials />
+          <LaunchOffer />
+          <FAQ />
+          <ClosingCta />
+          <StickyBookingBar />
+          <Footer />
         </main>
       </BookingModalProvider>
     </LegalModalProvider>
