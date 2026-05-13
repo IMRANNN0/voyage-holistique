@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --ivory: #f5f0e7;
+  --sand: #d8c5a7;
+  --black-green: #07120e;
+  --deep-green: #0f2a20;
+  --moss: #52644a;
+  --gold: #c19a55;
+  --soft-gold: #e6d0a5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--black-green);
+}
+
+body {
+  margin: 0;
+  color: var(--black-green);
+  background:
+    linear-gradient(180deg, rgba(245, 240, 231, 0.98), rgba(236, 228, 214, 0.96)),
+    var(--ivory);
+  font-family: var(--font-sans), Arial, sans-serif;
+  text-rendering: geometricPrecision;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  color: var(--black-green);
+  background: var(--soft-gold);
+}
+
+.font-display {
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(193, 154, 85, 0.8), transparent);
+}
+
+.noise {
+  position: relative;
+}
+
+.noise::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.08;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.45) 0 1px, transparent 1px),
+    radial-gradient(circle at 80% 0%, rgba(193, 154, 85, 0.2) 0 1px, transparent 1px);
+  background-size: 34px 34px, 58px 58px;
+}
+
+.luxury-shadow {
+  box-shadow: 0 24px 80px rgba(3, 10, 7, 0.22);
+}
+
+.vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+@media (max-width: 767px) {
+  .vertical-title {
+    writing-mode: initial;
+  }
+
+  /* Mobile spacing: calmer vertical rhythm between sections */
+  section {
+    scroll-margin-top: 4rem;
+  }
+
+  /* Breathing room for mobile padding */
+  section > .mx-auto {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Slightly more generous gap between FAQ items on mobile */
+  #faq .grid {
+    gap: 0.875rem;
+  }
+}

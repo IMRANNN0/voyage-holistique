@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"D:\\\\holistic-helth-voiage\")",
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $proc = Get-Process -Id $conn.OwningProcess; \"PID $\\($proc.Id\\) — $\\($proc.ProcessName\\) — $\\($proc.Path\\)\" } else { \"Nothing listening on 3001\" })"
+    ]
+  }
+}
