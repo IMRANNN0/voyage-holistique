@@ -10,9 +10,12 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type FocusEvent,
   type FormEvent,
   type ReactNode,
 } from "react";
+
+import { trackBookingModal, trackFormEvent } from "@/lib/tracking";
 
 /**
  * ─── Google Sheet webhook (Apps Script) ─────────────────────
@@ -29,17 +32,39 @@ import {
  *      NEXT_PUBLIC_GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/AKfyc.../exec
  *   6. Restart `npm run dev`.
  *
- * Suggested Apps Script handler (header row in row 1 recommended):
+ * Apps Script handler — copy / paste this EXACT version into Code.gs and
+ * redeploy as a new Web App version. Anything older (especially versions
+ * with `landing_page`, `experience`, `source`, `offer`, `page`,
+ * `section_name`, `button_text`, `device_type`, `page_path`, etc. inside
+ * the appendRow array) will keep shifting `price` to column K and
+ * `cta_location` to column L, even after the sheet headers are deleted.
+ *
+ * Sheet row 1 must read exactly (A → J):
+ *   timestamp | name | phone | email | city | guests | intent | message | price | cta_location
  *
  *   function doPost(e) {
- *     const d = JSON.parse(e.postData.contents);
- *     SpreadsheetApp.getActiveSheet().appendRow([
- *       d.timestamp, d.name, d.phone, d.email, d.city,
- *       d.guests, d.intent, d.message,
- *       d.source, d.offer, d.price, d.cta_location
- *     ]);
+ *     const data = JSON.parse(e.postData.contents);
+ *     const sheet = SpreadsheetApp.getActiveSheet();
+ *     const rowValues = [
+ *       data.timestamp || "",
+ *       data.name || "",
+ *       data.phone || "",
+ *       data.email || "",
+ *       data.city || "",
+ *       data.guests || "",
+ *       data.intent || "",
+ *       data.message || "",
+ *       data.price || "Seulement 7 960 DH",
+ *       data.cta_location || ""
+ *     ];
+ *     console.log("append row values:", rowValues, rowValues.length);
+ *     sheet.appendRow(rowValues);
  *     return ContentService.createTextOutput("ok");
  *   }
+ *
+ * After saving: Deploy → Manage deployments → edit current deployment →
+ * Version: New version → Deploy. Old versions keep using their cached
+ * appendRow shape, so a new version is required.
  *
  * The fetch is sent with mode: "no-cors" + Content-Type: text/plain to avoid
  * the CORS preflight. The response is opaque, so we treat any non-throw as
@@ -48,6 +73,10 @@ import {
 const WEBHOOK_URL = process.env.NEXT_PUBLIC_GOOGLE_SHEET_WEBHOOK_URL ?? "";
 const RETREAT_DATES = "Du 12 au 15 juin";
 const RETREAT_PRICE = "Seulement 7 960 DH";
+const FORM_NAME = "voyage_holistique_booking";
+const LEAD_TYPE = "booking_request";
+const LEAD_VALUE = 7960;
+const CURRENCY = "MAD";
 
 type Intent = "reserver" | "rappel";
 
@@ -72,22 +101,12 @@ const initialForm: FormState = {
 };
 
 type Status = "idle" | "submitting" | "success" | "error";
-
-/**
- * Push a generic event to GTM dataLayer.
- * Never include personal/identifying data — only metadata about the action.
- */
-function pushDataLayer(event: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  const w = window as unknown as { dataLayer?: Array<Record<string, unknown>> };
-  w.dataLayer = w.dataLayer ?? [];
-  w.dataLayer.push(event);
-}
+type BookingModalCloseReason = "overlay" | "button" | "escape" | "success_button" | "programmatic";
 
 /* ─── context ──────────────────────────────────────────────── */
 type BookingContextValue = {
   open: (ctaLocation?: string) => void;
-  close: () => void;
+  close: (reason?: BookingModalCloseReason) => void;
   /** True once the user has clicked any "Réserver" CTA at least once. */
   hasBeenOpened: boolean;
 };
@@ -109,12 +128,31 @@ export function BookingModalProvider({ children }: { children: ReactNode }) {
 
   const open = useCallback((location: string = "unknown") => {
     setCtaLocation(location);
-    setIsOpen(true);
     setHasBeenOpened(true);
-    pushDataLayer({ event: "booking_modal_open", cta_location: location });
+    setIsOpen((wasOpen) => {
+      if (!wasOpen) {
+        trackBookingModal("open", {
+          cta_location: location,
+        });
+      }
+      return true;
+    });
   }, []);
 
-  const close = useCallback(() => setIsOpen(false), []);
+  const close = useCallback(
+    (reason: BookingModalCloseReason = "programmatic") => {
+      setIsOpen((wasOpen) => {
+        if (wasOpen) {
+          trackBookingModal("close", {
+            cta_location: ctaLocation,
+            close_reason: reason,
+          });
+        }
+        return false;
+      });
+    },
+    [ctaLocation]
+  );
 
   return (
     <BookingModalContext.Provider value={{ open, close, hasBeenOpened }}>
@@ -131,32 +169,44 @@ function BookingModal({
   ctaLocation,
 }: {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (reason?: BookingModalCloseReason) => void;
   ctaLocation: string;
 }) {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const formStartedRef = useRef(false);
+  const interactedFieldsRef = useRef<Set<keyof FormState>>(new Set());
 
   useEffect(() => {
+    // Helper: fully reset any scroll-locking inline styles we (or anything else)
+    // might have added on <body>. Defensive — keeps mobile from getting stuck
+    // in a horizontally-shifted state after success/close.
+    const resetBody = () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+    };
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
       requestAnimationFrame(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       });
     } else {
-      document.body.style.overflow = "";
+      resetBody();
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return resetBody;
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onClose("escape");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -166,6 +216,8 @@ function BookingModal({
     if (isOpen) {
       setStatus("idle");
       setErrorMessage("");
+      formStartedRef.current = false;
+      interactedFieldsRef.current.clear();
     }
   }, [isOpen]);
 
@@ -175,66 +227,121 @@ function BookingModal({
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
     };
 
+  const handleFieldFocus =
+    (key: keyof FormState) =>
+    (_e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (!formStartedRef.current) {
+        formStartedRef.current = true;
+        trackFormEvent("start", {
+          cta_location: ctaLocation,
+        });
+      }
+
+      if (!interactedFieldsRef.current.has(key)) {
+        interactedFieldsRef.current.add(key);
+        trackFormEvent("field_interaction", {
+          field_name: key,
+          cta_location: ctaLocation,
+        });
+      }
+    };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (status === "submitting") return;
 
+    trackFormEvent("submit_attempt", {
+      cta_location: ctaLocation,
+      intent: form.intent,
+      guests: form.guests,
+      value: LEAD_VALUE,
+      currency: CURRENCY,
+    });
+
     setStatus("submitting");
     setErrorMessage("");
 
-    const payload = {
-      timestamp: new Date().toISOString(),
-      name: form.name,
-      phone: form.phone,
-      email: form.email,
-      city: form.city,
-      guests: form.guests,
-      message: form.message,
-      intent: form.intent,
-      source: "landing_page",
-      offer: "Voyage Holistique",
-      price: RETREAT_PRICE,
-      cta_location: ctaLocation,
+    const formatReadableDate = (date: Date): string => {
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
     };
+
+    const payload = {
+      timestamp: formatReadableDate(new Date()),
+      name: form.name || "",
+      phone: form.phone || "",
+      email: form.email || "",
+      city: form.city || "",
+      guests: form.guests || "1",
+      intent: form.intent || "reserver",
+      message: form.message || "",
+      price: RETREAT_PRICE,
+      cta_location: ctaLocation || "unknown"
+    };
+    
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Google Sheets Payload]", payload);
+    }
 
     if (!WEBHOOK_URL) {
       setStatus("error");
       setErrorMessage(
         "La configuration du formulaire n'est pas finalisée. Merci de réessayer dans quelques instants."
       );
-      pushDataLayer({
-        event: "booking_form_submit",
-        status: "error",
+      trackFormEvent("submit_error", {
         cta_location: ctaLocation,
-        reason: "missing_webhook",
+        error_reason: "missing_webhook",
       });
       return;
     }
 
+    // Race the webhook against a 5s ceiling so the user never waits forever.
+    // With mode:"no-cors" the response is opaque — we can't read success/failure
+    // anyway, so once we've dispatched the request we treat it as sent and
+    // unblock the UI. The fetch keeps running in the background to actually
+    // deliver the row to Apps Script.
+    const SUBMIT_TIMEOUT_MS = 5000;
+
+    const fetchPromise = fetch(WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
+    // Always swallow late background failures so they don't surface as
+    // unhandled rejections after the UI has already moved on.
+    fetchPromise.catch(() => {});
+
+    const timeoutPromise = new Promise<"timeout">((resolve) =>
+      setTimeout(() => resolve("timeout"), SUBMIT_TIMEOUT_MS)
+    );
+
     try {
-      await fetch(WEBHOOK_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
-      });
+      await Promise.race([fetchPromise, timeoutPromise]);
       setStatus("success");
-      pushDataLayer({
-        event: "booking_form_submit",
-        status: "success",
+      // Fire-and-forget tracking — never await, never let it delay the UI.
+      trackFormEvent("submit_success", {
         cta_location: ctaLocation,
         intent: form.intent,
+        guests: form.guests,
+        value: LEAD_VALUE,
+        currency: CURRENCY,
       });
     } catch {
+      // Only reached on a synchronous network error inside the 5s window
+      // (CSP block, invalid URL, offline). Genuine slow-Apps-Script
+      // submissions hit the timeout branch above and resolve as success.
       setStatus("error");
       setErrorMessage(
         "Une erreur est survenue lors de l'envoi. Veuillez réessayer dans quelques instants."
       );
-      pushDataLayer({
-        event: "booking_form_submit",
-        status: "error",
+      trackFormEvent("submit_error", {
         cta_location: ctaLocation,
-        reason: "network",
+        error_reason: "network",
       });
     }
   };
@@ -247,8 +354,8 @@ function BookingModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-[#040908]/85 backdrop-blur-md sm:items-center sm:p-5"
-          onClick={onClose}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#040908]/85 backdrop-blur-md p-4 sm:p-5"
+          onClick={() => onClose("overlay")}
           role="dialog"
           aria-modal="true"
           aria-labelledby="booking-modal-title"
@@ -258,14 +365,14 @@ function BookingModal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 40, opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-2xl overflow-hidden rounded-t-[20px] border border-[#d8bd7a]/25 text-[#F8F4ED] shadow-[0_30px_80px_rgba(0,0,0,0.6)] sm:rounded-[16px]"
+            className="relative w-full max-w-2xl overflow-hidden rounded-[16px] border border-[#d8bd7a]/25 text-[#F8F4ED] shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
             style={{ background: "#041B16" }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               aria-label="Fermer"
-              onClick={onClose}
+              onClick={() => onClose("button")}
               className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-[#07120e]/60 text-[#f7f0e4] backdrop-blur transition hover:border-[#d8bd7a]/55 hover:bg-[#07120e]/85 hover:text-[#d8bd7a]"
             >
               <X className="h-5 w-5" />
@@ -280,6 +387,7 @@ function BookingModal({
                 status={status}
                 errorMessage={errorMessage}
                 onChange={handleChange}
+                onFieldFocus={handleFieldFocus}
                 onIntentChange={(intent) => setForm((prev) => ({ ...prev, intent }))}
                 onSubmit={handleSubmit}
               />
@@ -292,7 +400,7 @@ function BookingModal({
 }
 
 /* ─── success view ─────────────────────────────────────────── */
-function SuccessView({ onClose }: { onClose: () => void }) {
+function SuccessView({ onClose }: { onClose: (reason?: BookingModalCloseReason) => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -318,7 +426,7 @@ function SuccessView({ onClose }: { onClose: () => void }) {
       <div className="mt-9 flex justify-center">
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => onClose("success_button")}
           className="inline-flex items-center justify-center rounded-full border border-[#d8bd7a]/55 bg-[#d8bd7a]/15 px-7 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#d8bd7a] transition hover:bg-[#d8bd7a]/25"
         >
           Fermer
@@ -338,6 +446,7 @@ function FormView({
   status,
   errorMessage,
   onChange,
+  onFieldFocus,
   onIntentChange,
   onSubmit,
 }: {
@@ -348,6 +457,9 @@ function FormView({
   onChange: (
     key: keyof FormState
   ) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onFieldFocus: (
+    key: keyof FormState
+  ) => (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onIntentChange: (intent: Intent) => void;
   onSubmit: (e: FormEvent) => void;
 }) {
@@ -367,7 +479,7 @@ function FormView({
         </h3>
         <p className="mt-3 text-sm leading-7 text-[#ddd2bf]">
           Voyage Holistique · {RETREAT_DATES} ·{" "}
-          <span className="font-semibold text-[#d8bd7a]">{RETREAT_PRICE}</span> · Places limitées à 20.
+          <span className="font-semibold text-[#d8bd7a]" style={{ whiteSpace: "nowrap" }}>{RETREAT_PRICE}</span> · Places limitées à 20.
         </p>
       </div>
 
@@ -379,6 +491,7 @@ function FormView({
             autoComplete="name"
             value={form.name}
             onChange={onChange("name")}
+            onFocus={onFieldFocus("name")}
             disabled={submitting}
             className={inputClass}
           />
@@ -391,6 +504,7 @@ function FormView({
             autoComplete="tel"
             value={form.phone}
             onChange={onChange("phone")}
+            onFocus={onFieldFocus("phone")}
             disabled={submitting}
             className={inputClass}
           />
@@ -403,6 +517,7 @@ function FormView({
             autoComplete="email"
             value={form.email}
             onChange={onChange("email")}
+            onFocus={onFieldFocus("email")}
             disabled={submitting}
             className={inputClass}
           />
@@ -414,6 +529,7 @@ function FormView({
             autoComplete="address-level2"
             value={form.city}
             onChange={onChange("city")}
+            onFocus={onFieldFocus("city")}
             disabled={submitting}
             className={inputClass}
           />
@@ -426,6 +542,7 @@ function FormView({
             max={20}
             value={form.guests}
             onChange={onChange("guests")}
+            onFocus={onFieldFocus("guests")}
             disabled={submitting}
             className={inputClass}
           />
@@ -436,6 +553,7 @@ function FormView({
             rows={3}
             value={form.message}
             onChange={onChange("message")}
+            onFocus={onFieldFocus("message")}
             disabled={submitting}
             className={`${inputClass} resize-none`}
           />

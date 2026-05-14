@@ -50,17 +50,24 @@ function LegalModal({ kind, onClose }: { kind: LegalKind | null; onClose: () => 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const resetBody = () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+    };
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
       requestAnimationFrame(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       });
     } else {
-      document.body.style.overflow = "";
+      resetBody();
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return resetBody;
   }, [isOpen]);
 
   useEffect(() => {

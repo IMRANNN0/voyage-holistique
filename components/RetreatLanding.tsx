@@ -42,16 +42,38 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { BookingModalProvider, useBookingModal } from "@/components/BookingModal";
 import { LegalModalProvider, useLegalModals } from "@/components/LegalModals";
+import {
+  DEFAULT_WHATSAPP_MESSAGE,
+  getWhatsAppUrl,
+  initTracking,
+  markUserEngagedDeep,
+  markHighIntentUser,
+  pushDataLayerEvent,
+  pushDataLayerOnce,
+  trackCtaClick,
+  trackWhatsAppClick,
+  trackScrollDepth,
+  trackSectionView,
+  trackTimeOnPage,
+  trackOfferReserve,
+  trackProgrammeDayClick,
+  trackProgrammeNavigation,
+  trackFaqInteraction,
+  trackNavClick,
+  trackTestimonialInteraction,
+  trackFooterNavClick,
+  trackFooterLegalClick,
+} from "@/lib/tracking";
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /* ─── constants ───────────────────────────────────────────── */
-const WHATSAPP = `https://wa.me/31625375673?text=${encodeURIComponent(
-  "Bonjour, je souhaite réserver ma place pour le Voyage Holistique."
-)}`;
+const WHATSAPP = getWhatsAppUrl(DEFAULT_WHATSAPP_MESSAGE);
 const DATES = "Du 12 au 15 Juin";
 const PRICE = "Seulement 7 960 DH";
 const PLACES = "20 places uniquement";
+const RETREAT_VALUE = 7960;
+const TRACKING_CURRENCY = "MAD";
 
 /* ─── navigation ──────────────────────────────────────────── */
 const navItems = [
@@ -345,6 +367,165 @@ const testimonials = [
 /* ─── animation variant ───────────────────────────────────── */
 const fadeUp = { hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0 } };
 
+const trackedSections = [
+  { id: "top", sectionName: "hero" },
+  { id: "transformation", sectionName: "transformation" },
+  { id: "location", sectionName: "places" },
+  { id: "programme-complet", sectionName: "programme" },
+  { id: "learn", sectionName: "learnings" },
+  { id: "supervision", sectionName: "experts" },
+  { id: "testimonials", sectionName: "testimonial" },
+  { id: "offer", sectionName: "offer" },
+  { id: "faq", sectionName: "faq" },
+  { id: "reserve", sectionName: "final_cta" },
+  { id: "footer", sectionName: "footer" },
+];
+
+const scrollDepths = [25, 50, 75, 90, 100] as const;
+
+function trackReserveClick(
+  openBooking: (ctaLocation?: string) => void,
+  {
+    eventName,
+    buttonText,
+    sectionName,
+    ctaLocation,
+    ...params
+  }: {
+    eventName: string;
+    buttonText: string;
+    sectionName: string;
+    ctaLocation: string;
+  } & Record<string, unknown>
+) {
+  trackCtaClick({
+    eventName,
+    buttonText,
+    sectionName,
+    ctaLocation,
+    ...params,
+  });
+  openBooking(ctaLocation);
+}
+
+function TrackingObservers() {
+  useEffect(() => {
+    let currentScrollPercent = 0;
+    let reached60s = false;
+    let reached120s = false;
+    let reached50Scroll = false;
+    let reached75Scroll = false;
+
+    const checkEngagement = () => {
+      if (reached60s && reached50Scroll) {
+        markUserEngagedDeep("time_60s_and_scroll_50", {
+          time_on_page: 60,
+          scroll_percent: 50
+        });
+      }
+      
+      if (reached120s && reached75Scroll) {
+        markHighIntentUser("time_120s_and_scroll_75", {
+          time_on_page: 120,
+          scroll_percent: 75
+        });
+      }
+    };
+
+    const timerIds = [
+      { seconds: 30, callback: () => trackTimeOnPage(30) },
+      { 
+        seconds: 60, 
+        callback: () => {
+          trackTimeOnPage(60);
+          reached60s = true;
+          checkEngagement();
+        } 
+      },
+      { 
+        seconds: 120, 
+        callback: () => {
+          trackTimeOnPage(120);
+          reached120s = true;
+          checkEngagement();
+        } 
+      }
+    ].map(({ seconds, callback }) =>
+      window.setTimeout(callback, seconds * 1000)
+    );
+
+    let ticking = false;
+    const checkScrollDepth = () => {
+      ticking = false;
+      const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+      currentScrollPercent =
+        maxScroll === 0 ? 100 : Math.min(100, Math.floor((window.scrollY / maxScroll) * 100));
+
+      scrollDepths.forEach((threshold) => {
+        if (currentScrollPercent >= threshold) {
+          trackScrollDepth(threshold);
+          
+          if (threshold === 50) {
+            reached50Scroll = true;
+            checkEngagement();
+          }
+          
+          if (threshold === 75) {
+            reached75Scroll = true;
+            checkEngagement();
+          }
+        }
+      });
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(checkScrollDepth);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    checkScrollDepth();
+
+    const sectionByElement = new Map<Element, { id: string; sectionName: string }>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const section = sectionByElement.get(entry.target);
+          if (!section || !entry.isIntersecting) return;
+
+          const denominator = Math.max(
+            1,
+            Math.min(entry.boundingClientRect.height, window.innerHeight)
+          );
+          const visibilityPercent = Math.round(
+            Math.min(100, (entry.intersectionRect.height / denominator) * 100)
+          );
+          if (visibilityPercent < 25) return;
+
+          trackSectionView(section.sectionName, visibilityPercent);
+        });
+      },
+      { threshold: [0.15, 0.25, 0.5, 0.75] }
+    );
+
+    trackedSections.forEach((section) => {
+      const element = document.getElementById(section.id);
+      if (!element) return;
+      sectionByElement.set(element, section);
+      observer.observe(element);
+    });
+
+    return () => {
+      timerIds.forEach((timerId) => window.clearTimeout(timerId));
+      window.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+    };
+  }, []);
+
+  return null;
+}
+
 /* ═══════════════════════════════════════════════════════════
    UTILITY COMPONENTS
 ══════════════════════════════════════════════════════════════ */
@@ -449,14 +630,32 @@ function Header() {
           </a>
           <nav className="hidden items-center gap-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#ddd3c1] lg:flex lg:gap-7 lg:text-xs lg:tracking-[0.18em]">
             {navItems.map((item) => (
-              <a key={item.href} href={item.href} className="transition hover:text-[#d8bd7a]">
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() =>
+                  trackNavClick({
+                    buttonText: item.label,
+                    sectionName: "header",
+                    destinationUrl: item.href,
+                  })
+                }
+                className="transition hover:text-[#d8bd7a]"
+              >
                 {item.label}
               </a>
             ))}
           </nav>
           <button
             type="button"
-            onClick={() => openBooking("header")}
+            onClick={() =>
+              trackReserveClick(openBooking, {
+                eventName: "header_reserve_click",
+                buttonText: "Réserver",
+                sectionName: "header",
+                ctaLocation: "header",
+              })
+            }
             className="hidden rounded-full border border-[#d8bd7a]/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f4e3bd] transition hover:bg-[#d8bd7a] hover:text-[#07120e] lg:inline-flex"
           >
             Réserver
@@ -496,7 +695,14 @@ function Header() {
                 <a
                   key={item.href}
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    trackNavClick({
+                      buttonText: item.label,
+                      sectionName: "mobile_menu",
+                      destinationUrl: item.href,
+                    });
+                    setOpen(false);
+                  }}
                   className="font-display border-b border-white/10 pb-5 text-4xl text-[#f7f0e4]"
                 >
                   {item.label}
@@ -506,7 +712,12 @@ function Header() {
                 type="button"
                 onClick={() => {
                   setOpen(false);
-                  openBooking("header_mobile");
+                  trackReserveClick(openBooking, {
+                    eventName: "mobile_menu_reserve_click",
+                    buttonText: "Réserver votre place",
+                    sectionName: "mobile_menu",
+                    ctaLocation: "mobile_menu",
+                  });
                 }}
                 className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#d8bd7a] px-5 text-sm font-semibold uppercase tracking-[0.18em] text-[#07120e]"
               >
@@ -582,9 +793,28 @@ function Hero() {
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <CtaButton onClick={() => openBooking("hero")}>Réserver ma place</CtaButton>
+              <CtaButton
+                onClick={() =>
+                  trackReserveClick(openBooking, {
+                    eventName: "hero_reserve_click",
+                    buttonText: "Réserver ma place",
+                    sectionName: "hero",
+                    ctaLocation: "hero",
+                  })
+                }
+              >
+                Réserver ma place
+              </CtaButton>
               <a
                 href="#programme-complet"
+                onClick={() =>
+                  trackCtaClick({
+                    eventName: "hero_program_click",
+                    buttonText: "Découvrir le programme",
+                    sectionName: "hero",
+                    destinationUrl: "#programme-complet",
+                  })
+                }
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/25 px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-[#e8dfcf] transition duration-300 hover:border-white/55 hover:text-white sm:w-auto sm:px-6"
               >
                 Découvrir le programme
@@ -691,7 +921,17 @@ function TransformationCard({ item, index }: { item: Transformation; index: numb
               <button
                 type="button"
                 aria-label={`En savoir plus sur ${item.title}`}
-                onClick={() => setOpen(true)}
+                onClick={() => {
+                  trackCtaClick({
+                    eventName: "transformation_card_click",
+                    buttonText: "En savoir plus",
+                    sectionName: "transformation",
+                    card_title: item.title,
+                    card_index: index + 1,
+                    interaction_action: "open",
+                  });
+                  setOpen(true);
+                }}
                 className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d8bd7a]/40 bg-[#d8bd7a]/10 text-[#d8bd7a] transition duration-300 hover:rotate-90 hover:border-[#d8bd7a] hover:bg-[#d8bd7a] hover:text-[#07120e]"
               >
                 <Plus className="h-5 w-5" />
@@ -735,7 +975,17 @@ function TransformationCard({ item, index }: { item: Transformation; index: numb
             <button
               type="button"
               aria-label="Fermer le détail"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                trackCtaClick({
+                  eventName: "transformation_card_click",
+                  buttonText: "Fermer le détail",
+                  sectionName: "transformation",
+                  card_title: item.title,
+                  card_index: index + 1,
+                  interaction_action: "close",
+                });
+                setOpen(false);
+              }}
               className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d8bd7a]/55 bg-[#d8bd7a]/15 text-[#d8bd7a] transition duration-300 hover:rotate-180 hover:border-[#d8bd7a] hover:bg-[#d8bd7a] hover:text-[#07120e]"
             >
               <Minus className="h-5 w-5" />
@@ -803,10 +1053,45 @@ function Location() {
 
 function Programme() {
   const [activeDay, setActiveDay] = useState(0);
+  const programmeRef = useRef<HTMLDivElement>(null);
+
+  const handleDayTabClick = (newIndex: number) => {
+    const day = detailedProgram[newIndex];
+    trackProgrammeDayClick({
+      dayNumber: newIndex + 1,
+      dayLabel: day.day,
+      buttonText: day.day,
+      programme_title: day.title,
+    });
+    setActiveDay(newIndex);
+    if (programmeRef.current) {
+      programmeRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleDayNavigation = (direction: "previous" | "next", newIndex: number) => {
+    const fromDay = detailedProgram[activeDay];
+    const toDay = detailedProgram[newIndex];
+    const buttonText = direction === "next" ? "Jour suivant" : "Jour précédent";
+    
+    trackProgrammeNavigation({
+      direction,
+      fromDay: activeDay + 1,
+      toDay: newIndex + 1,
+      fromDayLabel: fromDay.day,
+      toDayLabel: toDay.day,
+      buttonText,
+    });
+    
+    setActiveDay(newIndex);
+    if (programmeRef.current) {
+      programmeRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <section id="programme-complet" className="bg-[#0f2a20] px-5 py-28 text-[#f7f0e4] md:px-8 md:py-36">
-      <div className="mx-auto max-w-7xl">
+      <div ref={programmeRef} className="mx-auto max-w-7xl">
         <SectionHeading
           light
           eyebrow="Programme · 4 jours"
@@ -819,7 +1104,7 @@ function Programme() {
             <button
               key={day.day}
               type="button"
-              onClick={() => setActiveDay(index)}
+              onClick={() => handleDayTabClick(index)}
               className={`rounded-full border px-10 py-4 text-lg font-bold uppercase tracking-[0.18em] transition duration-400 ease-out ${
                 activeDay === index
                   ? "border-[#d8bd7a] bg-[#d8bd7a] text-[#07120e] shadow-[0_12px_32px_rgba(216,189,122,0.45)]"
@@ -889,6 +1174,33 @@ function Programme() {
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Navigation buttons */}
+                  <div className="mt-8 flex items-center justify-between gap-4">
+                    {index > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDayNavigation("previous", index - 1)}
+                        className="rounded-full border border-white/30 px-8 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#c9c1b4] transition duration-400 ease-out hover:border-[#d8bd7a]/70 hover:text-[#d8bd7a] hover:bg-white/[0.06]"
+                      >
+                        Jour précédent
+                      </button>
+                    ) : (
+                      <div className="flex-1" />
+                    )}
+
+                    {index < detailedProgram.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDayNavigation("next", index + 1)}
+                        className="rounded-full border border-[#d8bd7a] bg-[#d8bd7a] px-8 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#07120e] shadow-[0_12px_32px_rgba(216,189,122,0.45)] transition duration-400 ease-out"
+                      >
+                        Jour suivant
+                      </button>
+                    ) : (
+                      <div className="flex-1" />
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -1125,7 +1437,15 @@ function Testimonials() {
                 type="button"
                 key={item.name}
                 aria-label={`Témoignage ${index + 1}`}
-                onClick={() => setActive(index)}
+                onClick={() => {
+                  trackTestimonialInteraction({
+                    buttonText: item.name,
+                    action: index > active ? "next" : "previous",
+                    testimonial_name: item.name,
+                    testimonial_index: index + 1,
+                  });
+                  setActive(index);
+                }}
                 className={`h-2.5 rounded-full transition-all duration-300 ${
                   active === index ? "w-12 bg-[#d8bd7a]" : "w-2.5 bg-[#3a3429] hover:bg-[#5a4e3a]"
                 }`}
@@ -1197,7 +1517,21 @@ function LaunchOffer() {
           </p>
 
           <div className="mt-10 hidden lg:block">
-            <CtaButton onClick={() => openBooking("pricing")}>Réserver ma place</CtaButton>
+            <CtaButton
+              onClick={() =>
+                trackReserveClick(openBooking, {
+                  eventName: "offer_reserve_click",
+                  buttonText: "Réserver ma place",
+                  sectionName: "offer",
+                  ctaLocation: "pricing_card",
+                  component_variant: "offer_text",
+                  value: RETREAT_VALUE,
+                  currency: TRACKING_CURRENCY,
+                })
+              }
+            >
+              Réserver ma place
+            </CtaButton>
           </div>
         </motion.div>
 
@@ -1274,13 +1608,41 @@ function LaunchOffer() {
               className="border-t p-8 md:p-10"
               style={{ borderColor: "rgba(212,175,55,0.18)" }}
             >
-              <CtaButton onClick={() => openBooking("pricing_card")}>Réserver ma place</CtaButton>
+              <CtaButton
+                onClick={() =>
+                  trackReserveClick(openBooking, {
+                    eventName: "offer_reserve_click",
+                    buttonText: "Réserver ma place",
+                    sectionName: "offer",
+                    ctaLocation: "pricing_card",
+                    component_variant: "pricing_card",
+                    value: RETREAT_VALUE,
+                    currency: TRACKING_CURRENCY,
+                  })
+                }
+              >
+                Réserver ma place
+              </CtaButton>
             </div>
           </div>
         </motion.div>
 
         <div className="lg:hidden">
-          <CtaButton onClick={() => openBooking("pricing_mobile")}>Réserver ma place</CtaButton>
+          <CtaButton
+            onClick={() =>
+              trackReserveClick(openBooking, {
+                eventName: "offer_reserve_click",
+                buttonText: "Réserver ma place",
+                sectionName: "offer",
+                ctaLocation: "pricing_mobile",
+                component_variant: "mobile_offer",
+                value: RETREAT_VALUE,
+                currency: TRACKING_CURRENCY,
+              })
+            }
+          >
+            Réserver ma place
+          </CtaButton>
         </div>
       </div>
     </section>
@@ -1317,7 +1679,14 @@ function FAQ() {
                 <button
                   type="button"
                   aria-expanded={isOpen}
-                  onClick={() => setActiveFaq(isOpen ? null : index)}
+                  onClick={() => {
+                    trackFaqInteraction({
+                      faqQuestion: faq.question,
+                      faqAction: isOpen ? "close" : "open",
+                      faqIndex: index + 1,
+                    });
+                    setActiveFaq(isOpen ? null : index);
+                  }}
                   className="flex w-full items-center justify-between gap-5 p-6 text-left md:p-7"
                 >
                   <span className="font-display text-xl font-semibold text-[#07120e] md:text-2xl">
@@ -1404,7 +1773,18 @@ function ClosingCta() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-          <CtaButton onClick={() => openBooking("closing_cta")}>Je réserve ma place</CtaButton>
+          <CtaButton
+            onClick={() =>
+              trackReserveClick(openBooking, {
+                eventName: "final_cta_click",
+                buttonText: "Je réserve ma place",
+                sectionName: "final_cta",
+                ctaLocation: "final_cta",
+              })
+            }
+          >
+            Je réserve ma place
+          </CtaButton>
         </div>
       </motion.div>
     </section>
@@ -1477,7 +1857,14 @@ function StickyBookingBar() {
             <div className="flex flex-1 items-center justify-end sm:flex-initial">
               <button
                 type="button"
-                onClick={() => openBooking("sticky_cta")}
+                onClick={() =>
+                  trackReserveClick(openBooking, {
+                    eventName: "sticky_bar_reserve_click",
+                    buttonText: "Réserver — 7 960 DH",
+                    sectionName: "sticky_bar",
+                    ctaLocation: "sticky_cta",
+                  })
+                }
                 className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-[#d8bd7a] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#07120e] transition hover:bg-[#e8cd8a] sm:flex-initial sm:px-6"
               >
                 Réserver — 7 960 DH
@@ -1500,7 +1887,7 @@ function Footer() {
   const { openPrivacy, openLegal } = useLegalModals();
 
   return (
-    <footer className="bg-[#050b09] px-5 pb-32 pt-20 text-[#d6cbbb] md:px-8 md:pb-20">
+    <footer id="footer" className="bg-[#050b09] px-5 pb-32 pt-20 text-[#d6cbbb] md:px-8 md:pb-20">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
@@ -1532,6 +1919,12 @@ function Footer() {
                 <a
                   key={item.href}
                   href={item.href}
+                  onClick={() =>
+                    trackFooterNavClick({
+                      buttonText: item.label,
+                      destinationUrl: item.href,
+                    })
+                  }
                   className="text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
                 >
                   {item.label}
@@ -1546,6 +1939,19 @@ function Footer() {
                 href={WHATSAPP}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => {
+                  trackCtaClick({
+                    eventName: "footer_whatsapp_click",
+                    buttonText: "+31 6 25 37 56 73",
+                    sectionName: "footer",
+                    destinationUrl: WHATSAPP,
+                  });
+                  trackWhatsAppClick({
+                    sectionName: "footer",
+                    buttonText: "+31 6 25 37 56 73",
+                    messagePrefill: DEFAULT_WHATSAPP_MESSAGE,
+                  });
+                }}
                 className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
               >
                 <MessageCircle className="h-4 w-4 text-[#d8bd7a]" />
@@ -1553,6 +1959,14 @@ function Footer() {
               </a>
               <a
                 href="mailto:contact@holistichealth.academy"
+                onClick={() =>
+                  trackCtaClick({
+                    eventName: "footer_email_click",
+                    buttonText: "contact@holistichealth.academy",
+                    sectionName: "footer",
+                    destinationUrl: "mailto:contact@holistichealth.academy",
+                  })
+                }
                 className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
               >
                 <Mail className="h-4 w-4 text-[#d8bd7a]" />
@@ -1562,6 +1976,14 @@ function Footer() {
                 href="https://www.instagram.com/laila_qottaya/"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() =>
+                  trackCtaClick({
+                    eventName: "footer_instagram_click",
+                    buttonText: "@laila_qottaya",
+                    sectionName: "footer",
+                    destinationUrl: "https://www.instagram.com/laila_qottaya/",
+                  })
+                }
                 className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
               >
                 <Camera className="h-4 w-4 text-[#d8bd7a]" />
@@ -1580,14 +2002,26 @@ function Footer() {
           <div className="flex flex-wrap gap-6">
             <button
               type="button"
-              onClick={openPrivacy}
+              onClick={() => {
+                trackFooterLegalClick({
+                  buttonText: "Politique de confidentialité",
+                  legal_modal: "privacy",
+                });
+                openPrivacy();
+              }}
               className="text-xs text-[#4a443e] transition hover:text-[#9d9487]"
             >
               Politique de confidentialité
             </button>
             <button
               type="button"
-              onClick={openLegal}
+              onClick={() => {
+                trackFooterLegalClick({
+                  buttonText: "Mentions légales",
+                  legal_modal: "legal",
+                });
+                openLegal();
+              }}
               className="text-xs text-[#4a443e] transition hover:text-[#9d9487]"
             >
               Mentions légales
@@ -1604,10 +2038,15 @@ function Footer() {
 ══════════════════════════════════════════════════════════════ */
 
 export default function RetreatLanding() {
+  useEffect(() => {
+    initTracking();
+  }, []);
+
   return (
     <LegalModalProvider>
       <BookingModalProvider>
         <main>
+          <TrackingObservers />
           <Header />
           <Hero />
           <Transformation />
