@@ -173,94 +173,170 @@ const locationCards = [
 ];
 
 /* ─── 4-day programme ─────────────────────────────────────── */
-const detailedProgram: Array<{
+type ProgrammeImage = { src: string; alt: string };
+
+type ProgrammeDay = {
   day: string;
   title: string;
   subtitle: string;
   schedule: Array<{ time: string; activity: string; icon: IconType }>;
   objective: string;
-  image: string;
-}> = [
+  /** Single image or a crossfading slideshow (Jour 2 = yoga + ice bath) */
+  images: ProgrammeImage[];
+};
+
+const detailedProgram: ProgrammeDay[] = [
   {
     day: "Jour 1",
     title: "Accueil & Installation",
-    subtitle: "Fès — Riyad royal privé",
-    image: "/images/riad.jpeg",
+    subtitle: "Fès — Riad Prestigieux Privé",
+    images: [{ src: "/images/riad.jpeg", alt: "Riad prestigieux privé à Fès" }],
     schedule: [
-      { time: "Matin", activity: "Départ de Casablanca et Rabat en transport VIP.", icon: Car },
       {
-        time: "Fin de journée",
-        activity: "Arrivée à Fès et installation dans le riyad privatisé.",
+        time: "Matin",
+        activity: "Départ VIP depuis Casablanca et Rabat en transport privé.",
+        icon: Car,
+      },
+      { time: "Mi-journée", activity: "Accueil chaleureux et arrivée à Fès.", icon: HeartHandshake },
+      {
+        time: "Après-midi",
+        activity: "Installation dans un Riad privé d'exception.",
         icon: Home,
       },
       {
+        time: "Fin de journée",
+        activity: "Temps de repos et immersion dans l'atmosphère du lieu.",
+        icon: Moon,
+      },
+      {
         time: "Soir",
-        activity: "Dîner sain et raffiné dans une ambiance calme et authentique.",
+        activity: "Dîner raffiné préparé avec des produits locaux Fassi.",
         icon: Utensils,
       },
       {
         time: "Après dîner",
-        activity: "Ouverture officielle avec Docteur Laila Qottaya.",
-        icon: HeartHandshake,
+        activity: "Ouverture officielle du voyage avec Docteur Laila Qottaya.",
+        icon: Sparkles,
+      },
+      {
+        time: "Soirée",
+        activity: "Cercle d'intention et introduction à l'expérience holistique.",
+        icon: Users,
       },
     ],
-    objective: "Entrer doucement dans l'expérience et se préparer à quatre jours de transformation.",
+    objective:
+      "Entrer progressivement dans l'expérience, s'installer, ralentir et ouvrir le voyage dans une atmosphère intime et raffinée.",
   },
   {
     day: "Jour 2",
     title: "Nature, Yoga & Détox",
-    subtitle: "Sefrou — ferme nature et reconnexion",
-    image: "/images/yoga.jpeg",
+    subtitle: "Sefrou — Ferme Nature & Reconnexion Profonde",
+    images: [
+      { src: "/images/yoga.jpeg", alt: "Séance de yoga en pleine nature à Sefrou" },
+      { src: "/images/ice path.png", alt: "Expérience Ice Bath après la randonnée" },
+    ],
     schedule: [
-      { time: "08:00", activity: "Méditation, respiration consciente et petit-déjeuner.", icon: Sunrise },
+      { time: "08:00", activity: "Réveil et petit-déjeuner.", icon: Sunrise },
       { time: "10:30", activity: "Départ vers une ferme préservée à Sefrou.", icon: MapPin },
-      { time: "11:00", activity: "Séance de yoga postural avec le coach spécialisé.", icon: Sparkles },
-      { time: "13:00", activity: "Marche consciente dans la nature.", icon: Mountain },
+      {
+        time: "11:00",
+        activity: "Séance de yoga postural avec coach spécialisé en plein air.",
+        icon: Sparkles,
+      },
+      { time: "12:00", activity: "Pause thé, café et jus frais avant la randonnée.", icon: Utensils },
+      {
+        time: "12:30",
+        activity: "Marche consciente dans la nature, randonnée entre 8 km et 14 km.",
+        icon: Mountain,
+      },
       {
         time: "14:30",
+        activity:
+          "Expérience Ice Bath après la marche pour revitalisation du corps et recentrage mental.",
+        icon: Droplet,
+      },
+      {
+        time: "15:30",
         activity: "Pause healthy bio + séances individuelles avec Docteur Laila.",
         icon: HeartHandshake,
       },
-      {
-        time: "20:00",
-        activity: "Soirée spirituelle Issawa puis coaching holistique.",
-        icon: Moon,
-      },
+      { time: "16:30", activity: "Pause café et relaxation au bord de la nature.", icon: Leaf },
+      { time: "18:30", activity: "Retour au Riad à Fès.", icon: Home },
+      { time: "19:00", activity: "Dîner raffiné au Riad.", icon: Utensils },
+      { time: "20:00", activity: "Soirée spirituelle Issawa.", icon: Moon },
+      { time: "22:00", activity: "Coaching holistique.", icon: Sparkles },
     ],
-    objective: "Libérer les tensions, réactiver l'énergie vitale et retrouver une respiration profonde.",
+    objective:
+      "Libérer les tensions, réactiver l'énergie vitale, renforcer le mental et retrouver une respiration profonde au contact de la nature.",
   },
   {
     day: "Jour 3",
     title: "Vichy Thermal & Spiritualité",
-    subtitle: "Vichy Thermal à Fès — bien-être thermal",
-    image: "/images/thermal-pool.jpeg",
+    subtitle: "Fès — Expérience Thermale & Reconnexion Intérieure",
+    images: [{ src: "/images/thermal-pool.jpeg", alt: "Expérience thermale et bien-être à Fès" }],
     schedule: [
-      { time: "08:00", activity: "Yoga sur la terrasse du riyad et petit-déjeuner.", icon: Sunrise },
+      {
+        time: "08:00",
+        activity: "Respiration et yoga sur la terrasse du Riad et petit-déjeuner.",
+        icon: Sunrise,
+      },
       { time: "10:30", activity: "Journée à Vichy Thermal et expérience thermale.", icon: Waves },
-      { time: "15:30", activity: "Retour au riyad et temps de repos.", icon: Home },
-      { time: "16:30", activity: "Rencontre avec une personnalité inspirante.", icon: Users },
-      { time: "19:00", activity: "Dîner raffiné au riyad.", icon: Utensils },
-      { time: "20:30", activity: "Soirée Mdah & Samâa puis healing collectif.", icon: Moon },
+      { time: "15:30", activity: "Retour au Riad et temps de repos.", icon: Home },
+      {
+        time: "16:30",
+        activity:
+          "Séance de Hijama sèche dans une approche de purification et d'équilibre énergétique.",
+        icon: Droplet,
+      },
+      { time: "17:00", activity: "Pause café, thé et jus au Riad.", icon: Utensils },
+      {
+        time: "17:30",
+        activity:
+          "Remise d'un protocole naturel de nettoyage intestinal et conseils bien-être personnalisés.",
+        icon: ShieldCheck,
+      },
+      { time: "19:00", activity: "Dîner raffiné au Riad Al Amine.", icon: Utensils },
+      {
+        time: "20:30",
+        activity: "Soirée Mdah & Samâa puis healing collectif.",
+        icon: Moon,
+      },
     ],
-    objective: "Apaiser le système nerveux, nourrir l'âme et vivre une expérience spirituelle authentique.",
+    objective:
+      "Purifier le corps, apaiser le système nerveux et ouvrir un espace de régénération profonde.",
   },
   {
     day: "Jour 4",
     title: "Intégration & Clôture",
-    subtitle: "Bilan — rituels — retour",
-    image: "/images/riad-terrace.jpeg",
+    subtitle: "Bilan, Recentrage & Retour en Douceur",
+    images: [
+      {
+        src: "/images/riad-terrace.jpeg",
+        alt: "Clôture du voyage holistique et remise des attestations",
+      },
+    ],
     schedule: [
-      { time: "08:00", activity: "Méditation, respiration et petit-déjeuner.", icon: Sunrise },
+      { time: "08:00", activity: "Yoga, méditation et respiration.", icon: Sunrise },
       {
         time: "09:00",
         activity: "Séance finale avec Docteur Laila : bilan et conseils holistiques.",
         icon: HeartHandshake,
       },
-      { time: "10:00", activity: "Échanges, témoignages et mots des participants.", icon: Users },
-      { time: "11:30", activity: "Remise des attestations de participation.", icon: Award },
-      { time: "12:00", activity: "Préparation au départ et retour vers Casablanca.", icon: Car },
+      {
+        time: "10:00",
+        activity: "Petit-déjeuner, échanges, témoignages et mots des participants.",
+        icon: Users,
+      },
+      {
+        time: "11:30",
+        activity:
+          "Remise des attestations de participation et cadeaux souvenirs de la ville de Fès.",
+        icon: Award,
+      },
+      { time: "14:00", activity: "Préparation au départ et retour vers Casablanca.", icon: Car },
     ],
-    objective: "Repartir avec des outils pratiques et une énergie renouvelée.",
+    objective:
+      "Intégrer l'expérience, ancrer les prises de conscience et repartir avec clarté, douceur et alignement.",
   },
 ];
 
@@ -1127,23 +1203,7 @@ function Programme() {
                 transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                 className="mt-10 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]"
               >
-                <div className="relative min-h-72 overflow-hidden rounded-[12px] lg:min-h-full">
-                  <Image
-                    src={day.image}
-                    alt={day.title}
-                    fill
-                    sizes="(min-width: 1024px) 40vw, 100vw"
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#07120e]/88 via-[#07120e]/20 to-transparent" />
-                  <div className="absolute bottom-6 left-6 right-6">
-                    <div className="gold-divider mb-4" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d8bd7a]">
-                      Objectif du jour
-                    </p>
-                    <p className="mt-2 text-base leading-7 text-[#f7f0e4]">{day.objective}</p>
-                  </div>
-                </div>
+                <DayVisual day={day} />
 
                 <div className="rounded-[12px] border border-white/10 bg-white/[0.04] p-6 md:p-8">
                   <div className="mb-6">
@@ -1209,6 +1269,77 @@ function Programme() {
         </AnimatePresence>
       </div>
     </section>
+  );
+}
+
+/**
+ * Day visual — single image, or a smooth crossfade slideshow when the day
+ * has multiple images (Jour 2: yoga ⇄ ice bath). Cycle: ~3.5s.
+ */
+function DayVisual({ day }: { day: ProgrammeDay }) {
+  const hasSlideshow = day.images.length > 1;
+  const [activeImage, setActiveImage] = useState(0);
+
+  useEffect(() => {
+    if (!hasSlideshow) return;
+    const id = window.setInterval(() => {
+      setActiveImage((i) => (i + 1) % day.images.length);
+    }, 3500);
+    return () => window.clearInterval(id);
+  }, [hasSlideshow, day.images.length]);
+
+  // Reset to first slide when the day changes (parent re-mounts via key, but
+  // belt-and-braces in case future refactors keep this mounted).
+  useEffect(() => {
+    setActiveImage(0);
+  }, [day.day]);
+
+  return (
+    <div className="relative min-h-72 overflow-hidden rounded-[12px] lg:min-h-full">
+      {day.images.map((img, i) => (
+        <motion.div
+          key={img.src}
+          initial={false}
+          animate={{ opacity: i === activeImage ? 1 : 0 }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-0"
+        >
+          <Image
+            src={img.src}
+            alt={img.alt}
+            fill
+            sizes="(min-width: 1024px) 40vw, 100vw"
+            loading="lazy"
+            className="object-cover"
+          />
+        </motion.div>
+      ))}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#07120e]/88 via-[#07120e]/20 to-transparent" />
+      <div className="absolute bottom-6 left-6 right-6">
+        <div className="gold-divider mb-4" />
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d8bd7a]">
+          Objectif du jour
+        </p>
+        <p className="mt-2 text-base leading-7 text-[#f7f0e4]">{day.objective}</p>
+      </div>
+      {/* Slide indicators (only when slideshow is active) */}
+      {hasSlideshow ? (
+        <div className="absolute right-5 top-5 flex gap-1.5">
+          {day.images.map((img, i) => (
+            <button
+              key={img.src}
+              type="button"
+              aria-label={`Image ${i + 1} : ${img.alt}`}
+              aria-current={i === activeImage}
+              onClick={() => setActiveImage(i)}
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                i === activeImage ? "w-8 bg-[#d8bd7a]" : "w-1.5 bg-white/45 hover:bg-white/70"
+              }`}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
