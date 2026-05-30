@@ -2205,13 +2205,6 @@ function Footer() {
                 +212 668 108 964
               </a>
               <a
-                href="tel:+212642562058"
-                className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
-              >
-                <MessageCircle className="h-4 w-4 text-[#d8bd7a]/55" />
-                +212 642 562 058
-              </a>
-              <a
                 href="mailto:contact@holistichealth.academy"
                 onClick={() =>
                   trackCtaClick({
