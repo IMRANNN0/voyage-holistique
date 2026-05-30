@@ -25,6 +25,7 @@ import {
   Moon,
   Minus,
   Mountain,
+  Phone,
   Plus,
   Quote,
   ShieldCheck,
@@ -2204,7 +2205,7 @@ function Footer() {
                 href="tel:+212668108964"
                 className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
               >
-                <MessageCircle className="h-4 w-4 text-[#d8bd7a]/55" />
+                <Phone className="h-4 w-4 text-[#d8bd7a]/55" />
                 +212 668 108 964
               </a>
               <a
