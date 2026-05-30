@@ -46,16 +46,11 @@ import {
   DEFAULT_WHATSAPP_MESSAGE,
   getWhatsAppUrl,
   initTracking,
-  markUserEngagedDeep,
-  markHighIntentUser,
   pushDataLayerEvent,
-  pushDataLayerOnce,
   trackCtaClick,
+  trackMetaCtaClick,
   trackWhatsAppClick,
-  trackScrollDepth,
-  trackSectionView,
   trackTimeOnPage,
-  trackOfferReserve,
   trackProgrammeDayClick,
   trackProgrammeNavigation,
   trackFaqInteraction,
@@ -466,14 +461,19 @@ function trackReserveClick(
     buttonText,
     sectionName,
     ctaLocation,
+    metaCtaName,
     ...params
   }: {
     eventName: string;
     buttonText: string;
     sectionName: string;
     ctaLocation: string;
+    metaCtaName?: string;
   } & Record<string, unknown>
 ) {
+  if (metaCtaName) {
+    trackMetaCtaClick(metaCtaName);
+  }
   trackCtaClick({
     eventName,
     buttonText,
@@ -486,117 +486,9 @@ function trackReserveClick(
 
 function TrackingObservers() {
   useEffect(() => {
-    let currentScrollPercent = 0;
-    let reached60s = false;
-    let reached120s = false;
-    let reached50Scroll = false;
-    let reached75Scroll = false;
-
-    const checkEngagement = () => {
-      if (reached60s && reached50Scroll) {
-        markUserEngagedDeep("time_60s_and_scroll_50", {
-          time_on_page: 60,
-          scroll_percent: 50
-        });
-      }
-      
-      if (reached120s && reached75Scroll) {
-        markHighIntentUser("time_120s_and_scroll_75", {
-          time_on_page: 120,
-          scroll_percent: 75
-        });
-      }
-    };
-
-    const timerIds = [
-      { seconds: 30, callback: () => trackTimeOnPage(30) },
-      { 
-        seconds: 60, 
-        callback: () => {
-          trackTimeOnPage(60);
-          reached60s = true;
-          checkEngagement();
-        } 
-      },
-      { 
-        seconds: 120, 
-        callback: () => {
-          trackTimeOnPage(120);
-          reached120s = true;
-          checkEngagement();
-        } 
-      }
-    ].map(({ seconds, callback }) =>
-      window.setTimeout(callback, seconds * 1000)
-    );
-
-    let ticking = false;
-    const checkScrollDepth = () => {
-      ticking = false;
-      const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
-      currentScrollPercent =
-        maxScroll === 0 ? 100 : Math.min(100, Math.floor((window.scrollY / maxScroll) * 100));
-
-      scrollDepths.forEach((threshold) => {
-        if (currentScrollPercent >= threshold) {
-          trackScrollDepth(threshold);
-          
-          if (threshold === 50) {
-            reached50Scroll = true;
-            checkEngagement();
-          }
-          
-          if (threshold === 75) {
-            reached75Scroll = true;
-            checkEngagement();
-          }
-        }
-      });
-    };
-
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(checkScrollDepth);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    checkScrollDepth();
-
-    const sectionByElement = new Map<Element, { id: string; sectionName: string }>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const section = sectionByElement.get(entry.target);
-          if (!section || !entry.isIntersecting) return;
-
-          const denominator = Math.max(
-            1,
-            Math.min(entry.boundingClientRect.height, window.innerHeight)
-          );
-          const visibilityPercent = Math.round(
-            Math.min(100, (entry.intersectionRect.height / denominator) * 100)
-          );
-          if (visibilityPercent < 25) return;
-
-          trackSectionView(section.sectionName, visibilityPercent);
-        });
-      },
-      { threshold: [0.15, 0.25, 0.5, 0.75] }
-    );
-
-    trackedSections.forEach((section) => {
-      const element = document.getElementById(section.id);
-      if (!element) return;
-      sectionByElement.set(element, section);
-      observer.observe(element);
-    });
-
-    return () => {
-      timerIds.forEach((timerId) => window.clearTimeout(timerId));
-      window.removeEventListener("scroll", onScroll);
-      observer.disconnect();
-    };
+    // Only fire the 30-second time-on-page event
+    const timerId = window.setTimeout(() => trackTimeOnPage(30), 30_000);
+    return () => window.clearTimeout(timerId);
   }, []);
 
   return null;
@@ -611,11 +503,13 @@ function SectionHeading({
   title,
   copy,
   light = false,
+  titleClassName,
 }: {
   eyebrow: string;
   title: string;
   copy?: string;
   light?: boolean;
+  titleClassName?: string;
 }) {
   return (
     <motion.div
@@ -634,9 +528,9 @@ function SectionHeading({
         {eyebrow}
       </p>
       <h2
-        className={`font-display mt-5 text-4xl font-semibold leading-[1.05] md:text-6xl ${
-          light ? "text-[#f7f0e4]" : "text-[#08140f]"
-        }`}
+        className={`font-display mt-5 font-semibold leading-[1.05] ${
+          titleClassName || "text-4xl md:text-6xl"
+        } ${light ? "text-[#f7f0e4]" : "text-[#08140f]"}`}
       >
         {title}
       </h2>
@@ -730,6 +624,7 @@ function Header() {
                 buttonText: "Réserver",
                 sectionName: "header",
                 ctaLocation: "header",
+                metaCtaName: "cta-navbar",
               })
             }
             className="hidden rounded-full border border-[#d8bd7a]/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f4e3bd] transition hover:bg-[#d8bd7a] hover:text-[#07120e] lg:inline-flex"
@@ -793,6 +688,7 @@ function Header() {
                     buttonText: "Réserver votre place",
                     sectionName: "mobile_menu",
                     ctaLocation: "mobile_menu",
+                    metaCtaName: "cta-mobile",
                   });
                 }}
                 className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#d8bd7a] px-5 text-sm font-semibold uppercase tracking-[0.18em] text-[#07120e]"
@@ -876,6 +772,7 @@ function Hero() {
                     buttonText: "Réserver ma place",
                     sectionName: "hero",
                     ctaLocation: "hero",
+                    metaCtaName: "cta-hero",
                   })
                 }
               >
@@ -1513,6 +1410,209 @@ function DoctorAuthority() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   INSPIRATIONS
+══════════════════════════════════════════════════════════════ */
+
+const inspirationsData = [
+  {
+    name: "Salma Bensaïd",
+    role: "Auteure, productrice audiovisuelle et entrepreneure",
+    image: "/images/salema-photofinal.jpeg",
+    imagePosition: "object-[center_15%]",
+    preview: "Auteure du livre « Carnet d'une éternelle nomade », Salma Bensaïd nous fera l'honneur de rejoindre cette aventure humaine et inspirante.\n\nElle partage une vision du voyage comme chemin de découverte de soi, de créativité et de quête de sens.",
+    fullText: "Dans le cadre du Holistic Health Holiday, nous avons le plaisir d’accueillir l’auteure, productrice audiovisuelle et entrepreneure Salma Bensaïd, auteure du livre Carnet d’une éternelle nomade, pour un moment humain et culturel empreint de partage, de réflexion et d’inspiration.\n\nAu fil de cette expérience, Salma Bensaïd nous invitera à parcourir les pages de son ouvrage et à découvrir l’histoire de cette « éternelle nomade » pour qui le voyage dépasse le simple déplacement entre les lieux pour devenir un chemin de découverte de soi, une exploration de l’humain et une quête permanente de sens dans un monde en constante transformation.\n\nGrâce à son riche parcours dans les domaines de la culture, de la créativité et de l’innovation, elle ouvrira aux participants une fenêtre sur un univers où se rencontrent mémoire et avenir, enracinement et liberté, héritage et renouveau.\n\nCette rencontre sera une occasion privilégiée d’écouter un témoignage inspirant sur la puissance des récits, l’importance de la culture et la valeur de l’empreinte que chacun laisse dans sa vie et dans celle des autres.\n\nUn moment de dialogue authentique, d’inspiration profonde et de voyage intérieur, que nous aurons le bonheur de vivre ensemble au cœur de l’expérience Holistic Health Holiday.",
+    bookImage: "/images/book-salma.jpeg",
+    bookTitle: "« Carnet d'une éternelle nomade »",
+  },
+  {
+    name: "Professeure Nezha Oudghiri",
+    role: "Médecin et universitaire",
+    image: "/images/Nazeha.jpeg",
+    imagePosition: "object-[center_10%]",
+    preview: "Médecin, universitaire et femme profondément engagée dans la compréhension de l'être humain, la Professeure Nezha Oudghiri enrichira cette expérience par son regard unique.\n\nSon parcours allie rigueur scientifique, transmission du savoir et profonde sensibilité humaine.",
+    fullText: "Parmi les personnalités qui enrichiront cette expérience humaine exceptionnelle, nous aurons le privilège de partager quelques jours aux côtés de la Professeure Nezha Oudghiri, médecin, universitaire et femme profondément engagée dans la compréhension de l’être humain dans toute sa complexité.\n\nTout au long de son parcours, elle a consacré sa vie à la médecine, à la transmission du savoir et à l’accompagnement des personnes dans des moments où la présence humaine, l’écoute et la confiance prennent toute leur importance. Son expérience lui a permis de développer une vision où la rigueur scientifique s’allie à une profonde sensibilité humaine.\n\nAu-delà de son parcours académique et médical remarquable, la Professeure Nezha Oudghiri incarne des valeurs de bienveillance, d’ouverture et de transmission qui résonnent pleinement avec l’esprit du Holistic Health Holiday.\n\nSa présence parmi nous sera l’occasion de partager des échanges inspirants autour de la santé, de l’humain, de la conscience, du bien-être et de la place essentielle que chacun peut accorder à l’équilibre dans sa vie personnelle et professionnelle.\n\nÀ travers son expérience, son regard et son parcours, elle nous rappelle que la véritable richesse réside souvent dans la qualité des rencontres, dans la profondeur des échanges et dans la capacité à rester profondément humain au cœur d’un monde en perpétuelle transformation.\n\nUne présence précieuse qui contribuera à faire de cette aventure bien plus qu’un voyage : une expérience de partage, de réflexion et de transformation.",
+  },
+  {
+    name: "Majda El Hajoui",
+    role: "Praticienne en kinésiologie",
+    image: "/images/hajoui.jpeg",
+    imagePosition: "object-[center_20%]",
+    preview: "Praticienne en kinésiologie, Majda El Hajoui accompagne l'être humain dans sa globalité à travers une approche fondée sur l'écoute du corps, des émotions et des mémoires intérieures.\n\nSon parcours allie rigueur professionnelle, sensibilité humaine et accompagnement holistique.",
+    fullText: "Parmi les belles rencontres qui viendront enrichir cette expérience humaine et transformatrice, nous aurons le plaisir de partager cette aventure aux côtés de Majda Hajoui, praticienne en kinésiologie, passionnée par l’accompagnement de l’être humain dans sa globalité.\n\nDiplômée de l’Institut Supérieur de Commerce et d’Administration des Entreprises, Majda a construit un parcours professionnel solide dans le domaine du contrôle de gestion, du contrôle interne et du management industriel, notamment au sein de grands groupes tels que Grupo Votorantim.\n\nÀ travers son approche en kinésiologie, elle place l’écoute du corps, des émotions et des mémoires intérieures au cœur du chemin vers l’équilibre. Sa pratique invite chacun à mieux comprendre ses blocages, à libérer certaines tensions profondes et à retrouver une harmonie plus juste entre le corps, l’esprit et le vécu émotionnel.\n\nAu fil du Holistic Health Holiday, sa présence apportera une dimension douce, consciente et profondément humaine à l’expérience. Elle nous rappellera l’importance de ralentir, de se reconnecter à soi et d’accueillir les messages du corps comme des clés de transformation intérieure.\n\nUne belle âme, portée par un parcours riche entre rigueur professionnelle, sensibilité humaine et accompagnement holistique, qui contribuera à faire de cette aventure un moment riche en partage, en conscience et en inspiration.",
+  }
+];
+
+function Inspirations() {
+  const [activeId, setActiveId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activeId !== null) {
+      document.body.style.overflow = "hidden";
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setActiveId(null);
+      };
+      window.addEventListener("keydown", handleEscape);
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", handleEscape);
+      };
+    }
+  }, [activeId]);
+
+  return (
+    <section id="inspirations" className="relative overflow-hidden bg-[#efe6d6] px-5 py-28 md:px-8 md:py-36">
+      <div className="relative mx-auto max-w-7xl">
+        <SectionHeading
+          eyebrow="NOS INSPIRATIONS"
+          title="Des rencontres qui enrichissent l’expérience."
+          copy="Des voix singulières viendront nourrir cette parenthèse par des moments d’échange, d’inspiration et de transmission."
+          titleClassName="text-3xl md:text-5xl"
+        />
+
+        <div className="mt-20 grid gap-6 md:grid-cols-3">
+          {inspirationsData.map((person, index) => (
+            <motion.div
+              key={person.name}
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.8, delay: index * 0.15, ease: [0.22, 1, 0.36, 1] }}
+              className="luxury-shadow flex flex-col overflow-hidden rounded-[14px] border border-[#d8bd7a]/25 bg-[#0f2a20]"
+            >
+              <div className="relative h-[380px] w-full shrink-0">
+                <Image
+                  src={person.image}
+                  alt={person.name}
+                  fill
+                  sizes="(min-width: 768px) 33vw, 100vw"
+                  className={`object-cover ${person.imagePosition || 'object-center'}`}
+                />
+                <div className="absolute left-4 top-4">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8bd7a]/35 bg-[#07120e]/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bd7a] backdrop-blur-md">
+                    <Sparkles className="h-3 w-3" />
+                    Invitée
+                  </span>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f2a20] via-[#0f2a20]/20 to-transparent" />
+                <div className="absolute inset-x-6 bottom-0 translate-y-4">
+                  <h3 className="font-display text-3xl font-semibold text-[#fbf4e8]">
+                    {person.name}
+                  </h3>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#d8bd7a]">
+                    {person.role}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-1 flex-col justify-between p-6 pt-8">
+                <p className="text-sm leading-7 text-[#cfc6b8] line-clamp-4 whitespace-pre-line">
+                  {person.preview}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveId(index)}
+                  className="group mt-8 flex w-full items-center justify-between rounded-full border border-[#d8bd7a]/30 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#d8bd7a] transition hover:border-[#d8bd7a] hover:bg-[#d8bd7a]/10"
+                >
+                  Lire la suite
+                  <ArrowRight className="h-4 w-4 transition duration-300 group-hover:translate-x-1" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="mt-20 text-center">
+          <p className="font-display text-2xl font-semibold italic text-[#8f6f38] md:text-3xl">
+            « Des rencontres qui nourrissent autant l'esprit que le cœur. »
+          </p>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {activeId !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#07120e]/80 p-4 backdrop-blur-sm sm:p-6"
+            onClick={() => setActiveId(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="relative flex max-h-[90vh] w-full max-w-[1200px] flex-col overflow-hidden rounded-[16px] border border-[#d8bd7a]/30 bg-[#0f2a20] shadow-[0_32px_80px_rgba(0,0,0,0.6)] md:flex-row"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="modal-title"
+            >
+              <button
+                type="button"
+                onClick={() => setActiveId(null)}
+                className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-[#07120e]/50 text-[#f7f0e4] backdrop-blur transition hover:bg-[#d8bd7a] hover:text-[#07120e] md:right-6 md:top-6"
+                aria-label="Fermer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="relative h-[30vh] w-full shrink-0 md:h-auto md:w-[45%] lg:w-[40%]">
+                <Image
+                  src={inspirationsData[activeId].image}
+                  alt={inspirationsData[activeId].name}
+                  fill
+                  sizes="(min-width: 768px) 45vw, 100vw"
+                  className={`object-cover ${inspirationsData[activeId].imagePosition || 'object-center'}`}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f2a20] via-transparent to-transparent md:bg-gradient-to-r" />
+              </div>
+
+              <div className="flex flex-1 flex-col overflow-y-auto p-6 md:p-10 lg:p-14 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d8bd7a]/20 [&::-webkit-scrollbar-track]:bg-transparent">
+                <div className="max-w-2xl">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8bd7a]/35 bg-[#d8bd7a]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bd7a]">
+                    <Sparkles className="h-3 w-3" />
+                    Invitée
+                  </span>
+                  <h2 id="modal-title" className="font-display mt-5 text-4xl font-semibold text-[#fbf4e8] md:text-5xl">
+                    {inspirationsData[activeId].name}
+                  </h2>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#d8bd7a]">
+                    {inspirationsData[activeId].role}
+                  </p>
+                  
+                  <div className="mt-8 max-w-[65ch] space-y-6 text-sm leading-[2] text-[#cfc6b8] md:text-base md:leading-[2]">
+                    {inspirationsData[activeId].fullText.split("\n\n").map((paragraph, i) => (
+                      <p key={i}>{paragraph}</p>
+                    ))}
+                  </div>
+
+                  {inspirationsData[activeId].bookImage && (
+                    <div className="mt-12 flex flex-col items-center gap-6 rounded-[12px] border border-[#d8bd7a]/20 bg-white/[0.02] p-6 sm:flex-row sm:items-start md:p-8">
+                      <div className="relative h-44 w-32 shrink-0 overflow-hidden rounded-[6px] border border-white/10 shadow-[0_12px_24px_rgba(0,0,0,0.5)]">
+                        <Image src={inspirationsData[activeId].bookImage} alt={inspirationsData[activeId].bookTitle!} fill className="object-cover" />
+                      </div>
+                      <div className="text-center sm:text-left">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d8bd7a]">
+                          Son dernier livre
+                        </p>
+                        <p className="font-display mt-3 text-xl font-semibold leading-snug text-[#fbf4e8] md:text-2xl">
+                          {inspirationsData[activeId].bookTitle}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+/* ═══════════════════════════════════════════════════════════
    TESTIMONIALS
 ══════════════════════════════════════════════════════════════ */
 
@@ -1658,6 +1758,7 @@ function LaunchOffer() {
                   component_variant: "offer_text",
                   value: RETREAT_VALUE,
                   currency: TRACKING_CURRENCY,
+                  metaCtaName: "cta-offer",
                 })
               }
             >
@@ -1749,6 +1850,7 @@ function LaunchOffer() {
                     component_variant: "pricing_card",
                     value: RETREAT_VALUE,
                     currency: TRACKING_CURRENCY,
+                    metaCtaName: "cta-pricing-card",
                   })
                 }
               >
@@ -1769,6 +1871,7 @@ function LaunchOffer() {
                 component_variant: "mobile_offer",
                 value: RETREAT_VALUE,
                 currency: TRACKING_CURRENCY,
+                metaCtaName: "cta-mobile",
               })
             }
           >
@@ -1784,11 +1887,33 @@ function LaunchOffer() {
    FAQ  (6 items max)
 ══════════════════════════════════════════════════════════════ */
 
+/** FAQPage structured data — generated from the same `faqs` array rendered
+ *  on screen, so the content stays in sync automatically. */
+const faqPageJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: f.answer
+    }
+  }))
+};
+
 function FAQ() {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
   return (
     <section id="faq" className="bg-[#efe6d6] px-5 py-28 md:px-8 md:py-36">
+      <script
+        type="application/ld+json"
+        id="jsonld-faqpage"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqPageJsonLd).replace(/</g, "\\u003c")
+        }}
+      />
       <div className="mx-auto max-w-4xl">
         <SectionHeading
           eyebrow="Questions fréquentes"
@@ -1911,6 +2036,7 @@ function ClosingCta() {
                 buttonText: "Je réserve ma place",
                 sectionName: "final_cta",
                 ctaLocation: "final_cta",
+                metaCtaName: "cta-bottom",
               })
             }
           >
@@ -1928,86 +2054,69 @@ function ClosingCta() {
 
 function StickyBookingBar() {
   const [visible, setVisible] = useState(false);
-  const { open: openBooking, hasBeenOpened } = useBookingModal();
+  const { open: openBooking } = useBookingModal();
 
   useEffect(() => {
-    if (hasBeenOpened) {
-      setVisible(false);
-      return;
-    }
-
     const onScroll = () => {
-      const offerEl = document.getElementById("offer");
-      if (!offerEl) {
-        setVisible(false);
-        return;
-      }
-      const offerTop = offerEl.getBoundingClientRect().top;
-      const offerHasEntered = offerTop < window.innerHeight - 80;
-
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrollDepth = docHeight > 0 ? window.scrollY / docHeight : 0;
-      const deepEnough = scrollDepth > 0.65;
-
-      const reserveEl = document.getElementById("reserve");
-      const reserveTop = reserveEl
-        ? reserveEl.getBoundingClientRect().top + window.scrollY
-        : Number.POSITIVE_INFINITY;
-      const aboveReserve = window.scrollY < reserveTop - 400;
-
-      setVisible((offerHasEntered || deepEnough) && aboveReserve);
+      const scrollPercent = docHeight > 0 ? window.scrollY / docHeight : 0;
+      setVisible(scrollPercent >= 0.7);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [hasBeenOpened]);
+  }, []);
 
   return (
     <AnimatePresence>
       {visible ? (
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 24 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 bottom-5 z-40 px-3 md:bottom-8 md:px-6"
+          exit={{ opacity: 0, y: 32 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed bottom-6 left-1/2 z-[9999] w-[calc(100%-24px)] max-w-[900px] -translate-x-1/2"
         >
-          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 rounded-full border border-[#d8bd7a]/35 bg-[#07120e]/92 px-3 py-2 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl md:px-4 md:py-2.5">
-            <div className="hidden items-center gap-3 pl-3 sm:flex">
-              <div className="relative h-8 w-28">
+          <div className="flex items-center justify-between gap-3 rounded-full border border-[#d8bd7a]/25 bg-[#06120e] px-3 py-2 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:px-4 md:py-2.5">
+            {/* Logo */}
+            <div className="flex shrink-0 items-center pl-3">
+              <div className="relative h-8 w-28 sm:h-9 sm:w-32">
                 <Image
                   src="/images/logo.png"
-                  alt="Voyage Holistique Logo"
+                  alt="Holistic Health Academy"
                   fill
-                  sizes="112px"
+                  sizes="(min-width: 640px) 128px, 112px"
                   className="object-contain"
                 />
               </div>
             </div>
-            <div className="flex flex-1 items-center justify-end sm:flex-initial">
-              <button
-                type="button"
-                onClick={() =>
-                  trackReserveClick(openBooking, {
-                    eventName: "sticky_bar_reserve_click",
-                    buttonText: "Réserver — 7 960 DH",
-                    sectionName: "sticky_bar",
-                    ctaLocation: "sticky_cta",
-                  })
-                }
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-[#d8bd7a] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#07120e] transition hover:bg-[#e8cd8a] sm:flex-initial sm:px-6"
-              >
-                Réserver — 7 960 DH
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+
+            {/* CTA Button */}
+            <button
+              type="button"
+              onClick={() => {
+                trackMetaCtaClick("cta-sticky-bottom");
+                trackCtaClick({
+                  eventName: "sticky_bar_reserve_click",
+                  buttonText: "Réserver — 7 960 DH",
+                  sectionName: "sticky_bar",
+                  ctaLocation: "sticky_cta",
+                });
+                openBooking("sticky_cta");
+              }}
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-[#d8bd7a] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#07120e] transition duration-200 hover:bg-[#e8cd8a] sm:flex-initial sm:px-7"
+            >
+              Réserver — 7 960 DH
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </motion.div>
       ) : null}
     </AnimatePresence>
   );
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    FOOTER
@@ -2087,6 +2196,20 @@ function Footer() {
               >
                 <MessageCircle className="h-4 w-4 text-[#d8bd7a]" />
                 +31 6 25 37 56 73
+              </a>
+              <a
+                href="tel:+212668108964"
+                className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
+              >
+                <MessageCircle className="h-4 w-4 text-[#d8bd7a]/55" />
+                +212 668 108 964
+              </a>
+              <a
+                href="tel:+212642562058"
+                className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
+              >
+                <MessageCircle className="h-4 w-4 text-[#d8bd7a]/55" />
+                +212 642 562 058
               </a>
               <a
                 href="mailto:contact@holistichealth.academy"
@@ -2185,6 +2308,7 @@ export default function RetreatLanding() {
           <Programme />
           <Learn />
           <DoctorAuthority />
+          <Inspirations />
           <Testimonials />
           <LaunchOffer />
           <FAQ />

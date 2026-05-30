@@ -123,41 +123,28 @@ export function trackEvent(
   trackGA4Event(eventName, params);
 }
 
+// ─── Page Load ─────────────────────────────────────────────
 export function initTracking() {
   pushDataLayerOnce("page_view");
 }
 
-export function markUserEngagedDeep(
-  reason: string,
-  params: TrackingParams = {}
-) {
-  const eventName = "user_engaged_deep";
-  const eventParams = {
-    event_category: "engagement",
-    engagement_reason: reason,
-    ...params
-  };
-  
-  if (pushDataLayerOnce(eventName, eventName, eventParams)) {
-    trackGA4Event(eventName, eventParams);
-    trackMetaCustomEvent(eventName, eventParams);
+// ─── Time on Page (30s only) ────────────────────────────────
+export function trackTimeOnPage(seconds: number) {
+  const eventName = `time_on_page_${seconds}s`;
+  const uniqueKey = `time_on_page_${seconds}s`;
+
+  if (pushDataLayerOnce(eventName, uniqueKey, { time_on_page: seconds })) {
+    trackGA4Event(eventName, { time_on_page: seconds });
+    trackMetaCustomEvent(eventName, { time_on_page: seconds });
   }
 }
 
-export function markHighIntentUser(
-  reason: string,
-  params: TrackingParams = {}
-) {
-  const eventName = "high_intent_user";
-  const eventParams = {
-    event_category: "intent",
-    intent_reason: reason,
-    ...params
-  };
-  
-  if (pushDataLayerOnce(eventName, eventName, eventParams)) {
-    trackGA4Event(eventName, eventParams);
-    trackMetaCustomEvent(eventName, eventParams);
+// ─── CTA Click ─────────────────────────────────────────────
+export function trackMetaCtaClick(eventName: string) {
+  if (typeof window !== "undefined" && window.fbq) {
+    window.fbq("trackCustom", eventName, {
+      page: window.location.pathname,
+    });
   }
 }
 
@@ -185,15 +172,11 @@ export function trackCtaClick({
   });
 
   pushDataLayerEvent(eventName, eventParams);
-  trackGA4Event(eventName, eventParams);
-  trackMetaCustomEvent(eventName, eventParams);
-
-  markUserEngagedDeep("cta_click", {
-    source_event: eventName,
-    section_name: sectionName
-  });
+  trackGA4Event("cta_click", { ...eventParams, original_event: eventName });
+  trackMetaCustomEvent("cta_click", { ...eventParams, original_event: eventName });
 }
 
+// ─── Booking Modal ──────────────────────────────────────────
 export function trackBookingModal(
   action: "open" | "close",
   params: TrackingParams = {}
@@ -207,18 +190,9 @@ export function trackBookingModal(
 
   pushDataLayerEvent(eventName, eventParams);
   trackGA4Event(eventName, eventParams);
-
-  if (action === "open") {
-    trackMetaEvent("ViewContent", {
-      content_name: "Voyage Holistique Booking",
-      content_category: "booking",
-      ...eventParams
-    });
-    trackMetaCustomEvent(eventName, eventParams);
-    markHighIntentUser("booking_modal_open");
-  }
 }
 
+// ─── Form Events ────────────────────────────────────────────
 export function trackFormEvent(
   eventType:
     | "start"
@@ -228,21 +202,25 @@ export function trackFormEvent(
     | "submit_error",
   params: TrackingParams = {}
 ) {
-  const eventName = `form_${eventType}`;
   const eventParams = cleanParams({
     form_name: "voyage_holistique_booking",
     lead_type: "booking_request",
     ...params
   });
 
-  pushDataLayerEvent(eventName, eventParams);
-  trackGA4Event(eventName, eventParams);
-  trackMetaCustomEvent(eventName, eventParams);
-
-  if (eventType === "submit_success") {
-    trackGA4Event("generate_lead", {
-      form_name: "voyage_holistique_booking",
-      lead_type: "booking_request",
+  if (eventType === "start") {
+    // form_start: standard GA4 recommended event
+    pushDataLayerEvent("form_start", eventParams);
+    trackGA4Event("form_start", eventParams);
+    trackMetaCustomEvent("form_start", eventParams);
+  } else if (eventType === "submit_attempt") {
+    pushDataLayerEvent("form_submit_attempt", eventParams);
+    trackGA4Event("form_submit_attempt", eventParams);
+  } else if (eventType === "submit_success") {
+    // Lead fires ONLY here — after confirmed successful submission
+    pushDataLayerEvent("form_submit_success", eventParams);
+    trackGA4Event("Lead", {
+      ...eventParams,
       value: RETREAT_VALUE,
       currency: RETREAT_CURRENCY
     });
@@ -251,9 +229,15 @@ export function trackFormEvent(
       currency: RETREAT_CURRENCY,
       content_name: "Voyage Holistique Booking"
     });
+  } else if (eventType === "submit_error") {
+    pushDataLayerEvent("form_submit_error", eventParams);
+    trackGA4Event("form_submit_error", eventParams);
   }
+  // field_interaction: silently dropped (noisy, not needed)
 }
 
+// ─── WhatsApp Click (general — does NOT fire Contact) ───────
+// Contact fires ONLY on the Thank You page via trackWhatsAppContactClick()
 export function trackWhatsAppClick({
   sectionName,
   buttonText,
@@ -269,22 +253,52 @@ export function trackWhatsAppClick({
     section_name: sectionName,
     button_text: buttonText,
     whatsapp_number: WHATSAPP_NUMBER,
-    message_prefill: messagePrefill,
     destination_url: getWhatsAppUrl(messagePrefill),
     ...params
   });
 
   pushDataLayerEvent("whatsapp_click", eventParams);
   trackGA4Event("whatsapp_click", eventParams);
-  trackMetaEvent("Contact", {
-    content_name: "WhatsApp Contact",
-    ...eventParams
-  });
-
-  markHighIntentUser("whatsapp_click", { section_name: sectionName });
-  markUserEngagedDeep("whatsapp_click", { section_name: sectionName });
+  trackMetaCustomEvent("whatsapp_click", eventParams);
 }
 
+// ─── WhatsApp Click on Thank You page (fires Contact too) ───
+export function trackWhatsAppContactClick({
+  sectionName = "thank_you",
+  buttonText,
+  messagePrefill = DEFAULT_WHATSAPP_MESSAGE,
+  ...params
+}: {
+  sectionName?: string;
+  buttonText: string;
+  messagePrefill?: string;
+} & TrackingParams) {
+  const eventParams = cleanParams({
+    event_category: "contact",
+    section_name: sectionName,
+    button_text: buttonText,
+    whatsapp_number: WHATSAPP_NUMBER,
+    destination_url: getWhatsAppUrl(messagePrefill),
+    ...params
+  });
+
+  pushDataLayerEvent("whatsapp_click", eventParams);
+  trackGA4Event("whatsapp_click", eventParams);
+  trackMetaCustomEvent("whatsapp_click", eventParams);
+
+  // Standard Meta Contact event — fires ONLY from the Thank You page
+  trackMetaEvent("Contact", {
+    content_name: "WhatsApp Contact — Thank You Page",
+    ...eventParams
+  });
+  trackGA4Event("Contact", {
+    ...eventParams,
+    value: RETREAT_VALUE,
+    currency: RETREAT_CURRENCY
+  });
+}
+
+// ─── Offer Reserve ──────────────────────────────────────────
 export function trackOfferReserve(params: TrackingParams = {}) {
   const eventParams = cleanParams({
     value: RETREAT_VALUE,
@@ -293,28 +307,18 @@ export function trackOfferReserve(params: TrackingParams = {}) {
     ...params
   });
 
-  const ctaParams = {
-    eventName: "offer_reserve_click",
-    buttonText: "Réserver",
-    sectionName: "offer",
-    ...eventParams
-  };
-
-  pushDataLayerEvent(ctaParams.eventName, eventParams);
-  trackGA4Event(ctaParams.eventName, eventParams);
-
-  trackMetaEvent("InitiateCheckout", {
-    value: RETREAT_VALUE,
-    currency: RETREAT_CURRENCY,
-    content_name: "Voyage Holistique"
+  pushDataLayerEvent("offer_reserve_click", eventParams);
+  trackGA4Event("cta_click", {
+    ...eventParams,
+    original_event: "offer_reserve_click"
   });
-
-  markUserEngagedDeep("cta_click", {
-    source_event: ctaParams.eventName,
-    section_name: ctaParams.sectionName
+  trackMetaCustomEvent("cta_click", {
+    ...eventParams,
+    original_event: "offer_reserve_click"
   });
 }
 
+// ─── Programme Navigation ───────────────────────────────────
 export function trackProgrammeDayClick({
   dayNumber,
   dayLabel,
@@ -333,17 +337,8 @@ export function trackProgrammeDayClick({
     ...params
   });
 
-  const ga4EventName = "programme_day_click";
-  const metaEventName = `programme_day_${dayNumber}_click`;
-
-  pushDataLayerEvent(ga4EventName, eventParams);
-  trackGA4Event(ga4EventName, eventParams);
-  trackMetaCustomEvent(metaEventName, eventParams);
-
-  markUserEngagedDeep("cta_click", {
-    source_event: metaEventName,
-    section_name: "programme"
-  });
+  pushDataLayerEvent("programme_day_click", eventParams);
+  trackGA4Event("programme_day_click", eventParams);
 }
 
 export function trackProgrammeNavigation({
@@ -373,18 +368,16 @@ export function trackProgrammeNavigation({
     ...params
   });
 
-  const ga4EventName = direction === "next" ? "programme_next_day_click" : "programme_previous_day_click";
+  const ga4EventName =
+    direction === "next"
+      ? "programme_next_day_click"
+      : "programme_previous_day_click";
 
   pushDataLayerEvent(ga4EventName, eventParams);
   trackGA4Event(ga4EventName, eventParams);
-  trackMetaCustomEvent(ga4EventName, eventParams);
-
-  markUserEngagedDeep("cta_click", {
-    source_event: ga4EventName,
-    section_name: "programme"
-  });
 }
 
+// ─── FAQ ────────────────────────────────────────────────────
 export function trackFaqInteraction({
   faqQuestion,
   faqAction,
@@ -401,14 +394,11 @@ export function trackFaqInteraction({
     section_name: "faq"
   });
 
-  const ga4EventName = "faq_interaction";
-  const metaEventName = `faq_${faqIndex}_${faqAction}`;
-
-  pushDataLayerEvent(ga4EventName, eventParams);
-  trackGA4Event(ga4EventName, eventParams);
-  trackMetaCustomEvent(metaEventName, eventParams);
+  pushDataLayerEvent("faq_interaction", eventParams);
+  trackGA4Event("faq_interaction", eventParams);
 }
 
+// ─── Navigation ─────────────────────────────────────────────
 export function trackNavClick({
   buttonText,
   sectionName,
@@ -418,7 +408,8 @@ export function trackNavClick({
   sectionName: string;
   destinationUrl: string;
 }) {
-  const eventName = sectionName === "mobile_menu" ? "mobile_nav_click" : "header_nav_click";
+  const eventName =
+    sectionName === "mobile_menu" ? "mobile_nav_click" : "header_nav_click";
   const eventParams = cleanParams({
     event_category: "navigation",
     button_text: buttonText,
@@ -428,9 +419,9 @@ export function trackNavClick({
 
   pushDataLayerEvent(eventName, eventParams);
   trackGA4Event(eventName, eventParams);
-  trackMetaCustomEvent(eventName, eventParams);
 }
 
+// ─── Testimonial ────────────────────────────────────────────
 export function trackTestimonialInteraction({
   buttonText,
   action,
@@ -439,7 +430,6 @@ export function trackTestimonialInteraction({
   buttonText: string;
   action: "previous" | "next";
 } & TrackingParams) {
-  const eventName = "testimonial_interaction";
   const eventParams = cleanParams({
     event_category: "testimonial",
     button_text: buttonText,
@@ -448,18 +438,17 @@ export function trackTestimonialInteraction({
     ...params
   });
 
-  pushDataLayerEvent(eventName, eventParams);
-  trackGA4Event(eventName, eventParams);
-  trackMetaCustomEvent(eventName, eventParams);
+  pushDataLayerEvent("testimonial_interaction", eventParams);
+  trackGA4Event("testimonial_interaction", eventParams);
 }
 
+// ─── Footer ─────────────────────────────────────────────────
 export function trackFooterLegalClick({
   buttonText,
   ...params
 }: {
   buttonText: string;
 } & TrackingParams) {
-  const eventName = "footer_legal_click";
   const eventParams = cleanParams({
     event_category: "footer",
     button_text: buttonText,
@@ -467,9 +456,8 @@ export function trackFooterLegalClick({
     ...params
   });
 
-  pushDataLayerEvent(eventName, eventParams);
-  trackGA4Event(eventName, eventParams);
-  trackMetaCustomEvent(eventName, eventParams);
+  pushDataLayerEvent("footer_legal_click", eventParams);
+  trackGA4Event("footer_legal_click", eventParams);
 }
 
 export function trackFooterNavClick({
@@ -479,7 +467,6 @@ export function trackFooterNavClick({
   buttonText: string;
   destinationUrl: string;
 }) {
-  const eventName = "footer_nav_click";
   const eventParams = cleanParams({
     event_category: "footer",
     button_text: buttonText,
@@ -487,50 +474,6 @@ export function trackFooterNavClick({
     destination_url: destinationUrl
   });
 
-  pushDataLayerEvent(eventName, eventParams);
-  trackGA4Event(eventName, eventParams);
-  trackMetaCustomEvent(eventName, eventParams);
-}
-
-export function trackScrollDepth(percent: number) {
-  const eventName = `scroll_${percent}`;
-  const uniqueKey = `scroll_${percent}`;
-  
-  if (pushDataLayerOnce(eventName, uniqueKey, { scroll_percent: percent })) {
-    trackGA4Event(eventName, { scroll_percent: percent });
-    trackMetaCustomEvent(eventName, { scroll_percent: percent });
-  }
-}
-
-export function trackSectionView(
-  sectionName: string,
-  visibilityPercent: number
-) {
-  const params = {
-    section_name: sectionName,
-    visibility_percent: visibilityPercent,
-    time_on_page: getTimeOnPage()
-  };
-
-  const uniqueKey = `section_view_${sectionName}`;
-  const metaEventName = `section_view_${sectionName}`;
-
-  if (pushDataLayerOnce(metaEventName, uniqueKey, params)) {
-    trackGA4Event("section_view", params);
-    trackMetaCustomEvent(metaEventName, params);
-
-    if (sectionName === "offer") {
-      trackGA4Event("section_view_offer", params);
-    }
-  }
-}
-
-export function trackTimeOnPage(seconds: number) {
-  const eventName = `time_on_page_${seconds}s`;
-  const uniqueKey = `time_on_page_${seconds}s`;
-  
-  if (pushDataLayerOnce(eventName, uniqueKey, { time_on_page: seconds })) {
-    trackGA4Event(eventName, { time_on_page: seconds });
-    trackMetaCustomEvent(eventName, { time_on_page: seconds });
-  }
+  pushDataLayerEvent("footer_nav_click", eventParams);
+  trackGA4Event("footer_nav_click", eventParams);
 }

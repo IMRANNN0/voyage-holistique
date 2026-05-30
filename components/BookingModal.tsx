@@ -15,7 +15,8 @@ import {
   type ReactNode,
 } from "react";
 
-import { trackBookingModal, trackFormEvent } from "@/lib/tracking";
+import { trackBookingModal, trackFormEvent, trackWhatsAppContactClick } from "@/lib/tracking";
+import { DEFAULT_WHATSAPP_MESSAGE, getWhatsAppUrl } from "@/lib/tracking";
 
 /**
  * ─── Google Sheet webhook (Apps Script) ─────────────────────
@@ -400,14 +401,20 @@ function BookingModal({
 }
 
 /* ─── success view ─────────────────────────────────────────── */
+const THANK_YOU_WHATSAPP_MESSAGE =
+  "Bonjour, je viens de soumettre ma demande pour le Voyage Holistique. Je souhaite continuer l'échange avec votre équipe.";
+
 function SuccessView({ onClose }: { onClose: (reason?: BookingModalCloseReason) => void }) {
+  const whatsappUrl = getWhatsAppUrl(THANK_YOU_WHATSAPP_MESSAGE);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="px-7 py-14 text-center md:px-12 md:py-16"
+      className="px-7 py-10 text-center md:px-12 md:py-12"
     >
+      {/* Checkmark */}
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[#d8bd7a]/40 bg-[#d8bd7a]/12 text-[#d8bd7a]">
         <Check className="h-8 w-8" />
       </div>
@@ -421,13 +428,49 @@ function SuccessView({ onClose }: { onClose: (reason?: BookingModalCloseReason) 
         Merci pour votre confiance.
       </h3>
       <p className="mx-auto mt-5 max-w-md text-base leading-7 text-[#cfc6b8]">
-        Votre demande a bien été reçue. Notre équipe vous contactera rapidement.
+        Votre demande de participation a bien été reçue. Notre équipe reviendra vers vous
+        prochainement afin de confirmer votre inscription et de vous transmettre les informations
+        complémentaires.
       </p>
-      <div className="mt-9 flex justify-center">
+
+      {/* WhatsApp continuation block */}
+      <div
+        aria-hidden
+        className="mx-auto mt-8 max-w-sm rounded-[14px] border border-[#d8bd7a]/20 bg-[#0b1f18]/60 p-5"
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#d8bd7a]/80">
+          Pour un échange plus rapide
+        </p>
+        <p className="mt-2 text-sm leading-6 text-[#cfc6b8]">
+          Contactez-nous directement sur WhatsApp pour finaliser votre participation.
+        </p>
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() =>
+            trackWhatsAppContactClick({
+              sectionName: "thank_you",
+              buttonText: "Continuer sur WhatsApp",
+              messagePrefill: THANK_YOU_WHATSAPP_MESSAGE,
+            })
+          }
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white shadow-[0_8px_28px_rgba(37,211,102,0.35)] transition hover:bg-[#20bd5a] hover:shadow-[0_12px_36px_rgba(37,211,102,0.45)] focus:outline-none focus:ring-2 focus:ring-[#25D366] focus:ring-offset-2 focus:ring-offset-[#041B16]"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.14 1.547 5.87L0 24l6.273-1.524A11.953 11.953 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.031-1.386l-.36-.214-3.724.975.991-3.628-.235-.373A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+          </svg>
+          Continuer sur WhatsApp
+        </a>
+      </div>
+
+      {/* Close button */}
+      <div className="mt-7 flex justify-center">
         <button
           type="button"
           onClick={() => onClose("success_button")}
-          className="inline-flex items-center justify-center rounded-full border border-[#d8bd7a]/55 bg-[#d8bd7a]/15 px-7 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#d8bd7a] transition hover:bg-[#d8bd7a]/25"
+          className="inline-flex items-center justify-center rounded-full border border-[#d8bd7a]/30 bg-transparent px-7 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#9d9487] transition hover:border-[#d8bd7a]/55 hover:text-[#d8bd7a]"
         >
           Fermer
         </button>
