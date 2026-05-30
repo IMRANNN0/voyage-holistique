@@ -110,6 +110,7 @@ type BookingContextValue = {
   close: (reason?: BookingModalCloseReason) => void;
   /** True once the user has clicked any "Réserver" CTA at least once. */
   hasBeenOpened: boolean;
+  isOpen: boolean;
 };
 
 const BookingModalContext = createContext<BookingContextValue | null>(null);
@@ -156,7 +157,7 @@ export function BookingModalProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <BookingModalContext.Provider value={{ open, close, hasBeenOpened }}>
+    <BookingModalContext.Provider value={{ open, close, hasBeenOpened, isOpen }}>
       {children}
       <BookingModal isOpen={isOpen} onClose={close} ctaLocation={ctaLocation} />
     </BookingModalContext.Provider>
@@ -366,7 +367,7 @@ function BookingModal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 40, opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-2xl overflow-hidden rounded-[16px] border border-[#d8bd7a]/25 text-[#F8F4ED] shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+            className="relative flex w-full max-w-2xl max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2.5rem)] flex-col overflow-hidden rounded-[16px] border border-[#d8bd7a]/25 text-[#F8F4ED] shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
             style={{ background: "#041B16" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -374,9 +375,9 @@ function BookingModal({
               type="button"
               aria-label="Fermer"
               onClick={() => onClose("button")}
-              className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-[#07120e]/60 text-[#f7f0e4] backdrop-blur transition hover:border-[#d8bd7a]/55 hover:bg-[#07120e]/85 hover:text-[#d8bd7a]"
+              className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-[#07120e]/60 text-[#f7f0e4] backdrop-blur transition hover:border-[#d8bd7a]/55 hover:bg-[#07120e]/85 hover:text-[#d8bd7a] sm:right-4 sm:top-4 sm:h-10 sm:w-10"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
             {status === "success" ? (
@@ -509,24 +510,24 @@ function FormView({
   const submitting = status === "submitting";
 
   return (
-    <div ref={scrollRef} className="max-h-[92vh] overflow-y-auto">
-      <div className="border-b border-white/10 px-7 pb-6 pt-9 md:px-10 md:pb-7 md:pt-10">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div className="border-b border-white/10 px-5 pb-6 pt-7 sm:px-7 sm:pt-9 md:px-10 md:pb-7 md:pt-10">
         <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#d8bd7a]">
           Réservation
         </p>
         <h3
           id="booking-modal-title"
-          className="font-display mt-3 text-3xl font-semibold leading-tight text-[#fbf4e8] md:text-4xl"
+          className="font-display mt-3 pr-8 text-3xl font-semibold leading-tight text-[#fbf4e8] sm:pr-0 md:text-4xl"
         >
           Réservez votre place
         </h3>
         <p className="mt-3 text-sm leading-7 text-[#ddd2bf]">
           Voyage Holistique · {RETREAT_DATES} ·{" "}
-          <span className="font-semibold text-[#d8bd7a]" style={{ whiteSpace: "nowrap" }}>{RETREAT_PRICE}</span> · Places limitées à 20.
+          <span className="font-semibold whitespace-normal sm:whitespace-nowrap text-[#d8bd7a]">{RETREAT_PRICE}</span> · Places limitées à 20.
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="grid gap-4 px-7 py-7 md:grid-cols-2 md:px-10 md:py-8">
+      <form onSubmit={onSubmit} className="grid gap-4 px-5 py-6 sm:px-7 sm:py-7 md:grid-cols-2 md:px-10 md:py-8">
         <LuxField label="Nom complet" required>
           <input
             required

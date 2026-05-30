@@ -528,7 +528,7 @@ function SectionHeading({
         {eyebrow}
       </p>
       <h2
-        className={`font-display mt-5 font-semibold leading-[1.05] ${
+        className={`font-display mt-5 font-semibold leading-[1.05] break-words sm:break-normal ${
           titleClassName || "text-4xl md:text-6xl"
         } ${light ? "text-[#f7f0e4]" : "text-[#08140f]"}`}
       >
@@ -745,7 +745,7 @@ function Hero() {
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display mt-5 max-w-[10ch] text-5xl font-semibold uppercase leading-[0.86] tracking-[0.04em] text-[#fbf4e8] sm:text-6xl md:max-w-[11ch] md:text-8xl md:leading-[0.82] md:tracking-[0.08em] lg:text-9xl"
+            className="font-display mt-5 max-w-[10ch] text-5xl font-semibold uppercase leading-[0.86] tracking-[0.04em] text-[#fbf4e8] sm:text-6xl md:max-w-[11ch] md:text-8xl md:leading-[0.82] md:tracking-[0.08em] lg:text-9xl break-words sm:break-normal"
           >
             Voyage Holistique
           </motion.h1>
@@ -2005,7 +2005,7 @@ function ClosingCta() {
         className="relative mx-auto max-w-7xl"
       >
         <p className="text-xs font-semibold uppercase tracking-[0.34em] text-[#d8bd7a]">Invitation</p>
-        <h2 className="font-display mt-5 max-w-4xl text-6xl font-semibold leading-[0.98] text-[#fbf4e8] md:text-8xl">
+        <h2 className="font-display mt-5 max-w-4xl text-6xl font-semibold leading-[0.98] text-[#fbf4e8] md:text-8xl break-words sm:break-normal">
           Revenez à vous. Élevez-vous.
         </h2>
         <p className="mt-7 max-w-2xl text-lg leading-9 text-[#ddd2bf]">
@@ -2054,7 +2054,8 @@ function ClosingCta() {
 
 function StickyBookingBar() {
   const [visible, setVisible] = useState(false);
-  const { open: openBooking } = useBookingModal();
+  const { open: openBooking, isOpen: isBookingOpen } = useBookingModal();
+  const { isOpen: isLegalOpen } = useLegalModals();
 
   useEffect(() => {
     const onScroll = () => {
@@ -2068,25 +2069,27 @@ function StickyBookingBar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const showSticky = visible && !isBookingOpen && !isLegalOpen;
+
   return (
     <AnimatePresence>
-      {visible ? (
+      {showSticky ? (
         <motion.div
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 32 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed bottom-6 left-1/2 z-[9999] w-[calc(100%-24px)] max-w-[900px] -translate-x-1/2"
+          className="pointer-events-none fixed bottom-0 left-0 right-0 z-[9999] flex justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
         >
-          <div className="flex items-center justify-between gap-3 rounded-full border border-[#d8bd7a]/25 bg-[#06120e] px-3 py-2 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:px-4 md:py-2.5">
+          <div className="pointer-events-auto flex w-full max-w-[900px] items-center justify-between gap-3 rounded-full border border-[#d8bd7a]/25 bg-[#06120e] px-3 py-2 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:px-4 md:py-2.5">
             {/* Logo */}
-            <div className="flex shrink-0 items-center pl-3">
-              <div className="relative h-8 w-28 sm:h-9 sm:w-32">
+            <div className="flex shrink-0 items-center pl-1 sm:pl-3">
+              <div className="relative h-7 w-24 sm:h-9 sm:w-32">
                 <Image
                   src="/images/logo.png"
                   alt="Holistic Health Academy"
                   fill
-                  sizes="(min-width: 640px) 128px, 112px"
+                  sizes="(min-width: 640px) 128px, 96px"
                   className="object-contain"
                 />
               </div>
@@ -2105,10 +2108,10 @@ function StickyBookingBar() {
                 });
                 openBooking("sticky_cta");
               }}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-[#d8bd7a] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#07120e] transition duration-200 hover:bg-[#e8cd8a] sm:flex-initial sm:px-7"
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1 sm:gap-2 rounded-full bg-[#d8bd7a] px-3 sm:px-7 py-2.5 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.1em] sm:tracking-[0.18em] text-[#07120e] transition duration-200 hover:bg-[#e8cd8a] sm:flex-initial"
             >
               Réserver — 7 960 DH
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </motion.div>
@@ -2127,7 +2130,7 @@ function Footer() {
   const { openPrivacy, openLegal } = useLegalModals();
 
   return (
-    <footer id="footer" className="bg-[#050b09] px-5 pb-32 pt-20 text-[#d6cbbb] md:px-8 md:pb-20">
+    <footer id="footer" className="bg-[#050b09] px-5 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-20 text-[#d6cbbb] md:px-8 md:pb-24">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">

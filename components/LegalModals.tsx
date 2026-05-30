@@ -18,6 +18,7 @@ type LegalContextValue = {
   openPrivacy: () => void;
   openLegal: () => void;
   close: () => void;
+  isOpen: boolean;
 };
 
 const LegalModalContext = createContext<LegalContextValue | null>(null);
@@ -38,7 +39,7 @@ export function LegalModalProvider({ children }: { children: ReactNode }) {
   const close = useCallback(() => setActive(null), []);
 
   return (
-    <LegalModalContext.Provider value={{ openPrivacy, openLegal, close }}>
+    <LegalModalContext.Provider value={{ openPrivacy, openLegal, close, isOpen: active !== null }}>
       {children}
       <LegalModal kind={active} onClose={close} />
     </LegalModalContext.Provider>
