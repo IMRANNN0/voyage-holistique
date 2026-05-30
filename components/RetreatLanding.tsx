@@ -1419,7 +1419,7 @@ const inspirationsData = [
     name: "Salma Bensaïd",
     role: "Auteure, productrice audiovisuelle et entrepreneure",
     image: "/images/salema-photofinal.jpeg",
-    imagePosition: "object-[center_15%]",
+    imagePosition: "object-[center_5%]",
     preview: "Auteure du livre « Carnet d'une éternelle nomade », Salma Bensaïd nous fera l'honneur de rejoindre cette aventure humaine et inspirante.\n\nElle partage une vision du voyage comme chemin de découverte de soi, de créativité et de quête de sens.",
     fullText: "Dans le cadre du Holistic Health Holiday, nous avons le plaisir d’accueillir l’auteure, productrice audiovisuelle et entrepreneure Salma Bensaïd, auteure du livre Carnet d’une éternelle nomade, pour un moment humain et culturel empreint de partage, de réflexion et d’inspiration.\n\nAu fil de cette expérience, Salma Bensaïd nous invitera à parcourir les pages de son ouvrage et à découvrir l’histoire de cette « éternelle nomade » pour qui le voyage dépasse le simple déplacement entre les lieux pour devenir un chemin de découverte de soi, une exploration de l’humain et une quête permanente de sens dans un monde en constante transformation.\n\nGrâce à son riche parcours dans les domaines de la culture, de la créativité et de l’innovation, elle ouvrira aux participants une fenêtre sur un univers où se rencontrent mémoire et avenir, enracinement et liberté, héritage et renouveau.\n\nCette rencontre sera une occasion privilégiée d’écouter un témoignage inspirant sur la puissance des récits, l’importance de la culture et la valeur de l’empreinte que chacun laisse dans sa vie et dans celle des autres.\n\nUn moment de dialogue authentique, d’inspiration profonde et de voyage intérieur, que nous aurons le bonheur de vivre ensemble au cœur de l’expérience Holistic Health Holiday.",
     bookImage: "/images/book-salma.jpeg",
@@ -1429,7 +1429,7 @@ const inspirationsData = [
     name: "Professeure Nezha Oudghiri",
     role: "Médecin et universitaire",
     image: "/images/Nazeha.jpeg",
-    imagePosition: "object-[center_10%]",
+    imagePosition: "object-[center_0%]",
     preview: "Médecin, universitaire et femme profondément engagée dans la compréhension de l'être humain, la Professeure Nezha Oudghiri enrichira cette expérience par son regard unique.\n\nSon parcours allie rigueur scientifique, transmission du savoir et profonde sensibilité humaine.",
     fullText: "Parmi les personnalités qui enrichiront cette expérience humaine exceptionnelle, nous aurons le privilège de partager quelques jours aux côtés de la Professeure Nezha Oudghiri, médecin, universitaire et femme profondément engagée dans la compréhension de l’être humain dans toute sa complexité.\n\nTout au long de son parcours, elle a consacré sa vie à la médecine, à la transmission du savoir et à l’accompagnement des personnes dans des moments où la présence humaine, l’écoute et la confiance prennent toute leur importance. Son expérience lui a permis de développer une vision où la rigueur scientifique s’allie à une profonde sensibilité humaine.\n\nAu-delà de son parcours académique et médical remarquable, la Professeure Nezha Oudghiri incarne des valeurs de bienveillance, d’ouverture et de transmission qui résonnent pleinement avec l’esprit du Holistic Health Holiday.\n\nSa présence parmi nous sera l’occasion de partager des échanges inspirants autour de la santé, de l’humain, de la conscience, du bien-être et de la place essentielle que chacun peut accorder à l’équilibre dans sa vie personnelle et professionnelle.\n\nÀ travers son expérience, son regard et son parcours, elle nous rappelle que la véritable richesse réside souvent dans la qualité des rencontres, dans la profondeur des échanges et dans la capacité à rester profondément humain au cœur d’un monde en perpétuelle transformation.\n\nUne présence précieuse qui contribuera à faire de cette aventure bien plus qu’un voyage : une expérience de partage, de réflexion et de transformation.",
   },
@@ -1437,7 +1437,7 @@ const inspirationsData = [
     name: "Majda El Hajoui",
     role: "Praticienne en kinésiologie",
     image: "/images/hajoui.jpeg",
-    imagePosition: "object-[center_20%]",
+    imagePosition: "object-[center_10%]",
     preview: "Praticienne en kinésiologie, Majda El Hajoui accompagne l'être humain dans sa globalité à travers une approche fondée sur l'écoute du corps, des émotions et des mémoires intérieures.\n\nSon parcours allie rigueur professionnelle, sensibilité humaine et accompagnement holistique.",
     fullText: "Parmi les belles rencontres qui viendront enrichir cette expérience humaine et transformatrice, nous aurons le plaisir de partager cette aventure aux côtés de Majda Hajoui, praticienne en kinésiologie, passionnée par l’accompagnement de l’être humain dans sa globalité.\n\nDiplômée de l’Institut Supérieur de Commerce et d’Administration des Entreprises, Majda a construit un parcours professionnel solide dans le domaine du contrôle de gestion, du contrôle interne et du management industriel, notamment au sein de grands groupes tels que Grupo Votorantim.\n\nÀ travers son approche en kinésiologie, elle place l’écoute du corps, des émotions et des mémoires intérieures au cœur du chemin vers l’équilibre. Sa pratique invite chacun à mieux comprendre ses blocages, à libérer certaines tensions profondes et à retrouver une harmonie plus juste entre le corps, l’esprit et le vécu émotionnel.\n\nAu fil du Holistic Health Holiday, sa présence apportera une dimension douce, consciente et profondément humaine à l’expérience. Elle nous rappellera l’importance de ralentir, de se reconnecter à soi et d’accueillir les messages du corps comme des clés de transformation intérieure.\n\nUne belle âme, portée par un parcours riche entre rigueur professionnelle, sensibilité humaine et accompagnement holistique, qui contribuera à faire de cette aventure un moment riche en partage, en conscience et en inspiration.",
   }
@@ -1465,8 +1465,7 @@ function Inspirations() {
       <div className="relative mx-auto max-w-7xl">
         <SectionHeading
           eyebrow="NOS INSPIRATIONS"
-          title="Des rencontres qui enrichissent l’expérience."
-          copy="Des voix singulières viendront nourrir cette parenthèse par des moments d’échange, d’inspiration et de transmission."
+          title="L’une des belles âmes et personnalités inspirantes de cette aventure holistique"
           titleClassName="text-3xl md:text-5xl"
         />
 
@@ -1489,12 +1488,6 @@ function Inspirations() {
                   sizes="(min-width: 768px) 33vw, 100vw"
                   className={`object-cover ${person.imagePosition || 'object-center'}`}
                 />
-                <div className="absolute left-4 top-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8bd7a]/35 bg-[#07120e]/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bd7a] backdrop-blur-md">
-                    <Sparkles className="h-3 w-3" />
-                    Invitée
-                  </span>
-                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0f2a20] via-[#0f2a20]/20 to-transparent" />
                 <div className="absolute inset-x-6 bottom-0 translate-y-4">
                   <h3 className="font-display text-3xl font-semibold text-[#fbf4e8]">
@@ -1572,11 +1565,7 @@ function Inspirations() {
 
               <div className="flex flex-1 flex-col overflow-y-auto p-6 md:p-10 lg:p-14 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d8bd7a]/20 [&::-webkit-scrollbar-track]:bg-transparent">
                 <div className="max-w-2xl">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8bd7a]/35 bg-[#d8bd7a]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bd7a]">
-                    <Sparkles className="h-3 w-3" />
-                    Invitée
-                  </span>
-                  <h2 id="modal-title" className="font-display mt-5 text-4xl font-semibold text-[#fbf4e8] md:text-5xl">
+                  <h2 id="modal-title" className="font-display text-4xl font-semibold text-[#fbf4e8] md:text-5xl">
                     {inspirationsData[activeId].name}
                   </h2>
                   <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#d8bd7a]">
