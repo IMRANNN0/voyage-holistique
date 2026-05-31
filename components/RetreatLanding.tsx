@@ -25,7 +25,6 @@ import {
   Moon,
   Minus,
   Mountain,
-  Phone,
   Plus,
   Quote,
   ShieldCheck,
@@ -2191,10 +2190,25 @@ function Footer() {
                 +31 6 25 37 56 73
               </a>
               <a
-                href="tel:+212668108964"
+                href={getWhatsAppUrl("212668108964", DEFAULT_WHATSAPP_MESSAGE)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackCtaClick({
+                    eventName: "footer_whatsapp_click_ma",
+                    buttonText: "+212 668 108 964",
+                    sectionName: "footer",
+                    destinationUrl: getWhatsAppUrl("212668108964", DEFAULT_WHATSAPP_MESSAGE),
+                  });
+                  trackWhatsAppClick({
+                    sectionName: "footer",
+                    buttonText: "+212 668 108 964",
+                    messagePrefill: DEFAULT_WHATSAPP_MESSAGE,
+                  });
+                }}
                 className="flex items-center gap-3 text-sm text-[#9d9487] transition hover:text-[#d8bd7a]"
               >
-                <Phone className="h-4 w-4 text-[#d8bd7a]/55" />
+                <MessageCircle className="h-4 w-4 text-[#d8bd7a]" />
                 +212 668 108 964
               </a>
               <a

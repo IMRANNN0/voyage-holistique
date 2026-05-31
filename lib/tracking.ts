@@ -42,8 +42,17 @@ function cleanParams(params: TrackingParams) {
   );
 }
 
-export function getWhatsAppUrl(message = DEFAULT_WHATSAPP_MESSAGE) {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+/** Build a wa.me URL. Pass a different phone (international format, no + or
+ *  spaces) to target an alternate WhatsApp account — e.g. the Morocco line. */
+export function getWhatsAppUrl(
+  messageOrPhone: string = DEFAULT_WHATSAPP_MESSAGE,
+  message?: string
+) {
+  // Backwards-compat: single-arg form is the message, default phone.
+  const isPhoneFirst = typeof message === "string";
+  const phone = isPhoneFirst ? messageOrPhone : WHATSAPP_NUMBER;
+  const text = isPhoneFirst ? (message ?? DEFAULT_WHATSAPP_MESSAGE) : messageOrPhone;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
 export function trackGA4Event(
