@@ -173,7 +173,9 @@ export function trackCtaClick({
 
   pushDataLayerEvent(eventName, eventParams);
   trackGA4Event("cta_click", { ...eventParams, original_event: eventName });
-  trackMetaCustomEvent("cta_click", { ...eventParams, original_event: eventName });
+  // Meta Pixel: only the named CTA event fires (cta-offer, cta-pricing-card,
+  // cta-sticky-bottom, cta-bottom) via trackMetaCtaClick at the call site.
+  // The generic Meta "cta_click" was removed to avoid duplicate events.
 }
 
 // ─── Booking Modal ──────────────────────────────────────────
@@ -312,10 +314,8 @@ export function trackOfferReserve(params: TrackingParams = {}) {
     ...eventParams,
     original_event: "offer_reserve_click"
   });
-  trackMetaCustomEvent("cta_click", {
-    ...eventParams,
-    original_event: "offer_reserve_click"
-  });
+  // Meta Pixel: the named "cta-offer" event is fired separately via
+  // trackMetaCtaClick at the call site — no generic duplicate here.
 }
 
 // ─── Programme Navigation ───────────────────────────────────
